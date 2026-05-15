@@ -745,7 +745,10 @@ body {
 </div>
 
 <script>
-// ——— Arc Network Constants ———
+// ——— Backend Config ───────────────────────────────────────────────────────────
+const BACKEND_URL = 'https://api.arcflow.live'; // local: http://localhost:3001
+
+// ——— Arc Network Constants ───────────────────────────────────────────────────
 const ARC_CHAIN_ID = 5042002;
 const ARC_CHAIN_ID_HEX = '0x4CEF52';
 const ARC_RPC_URL = 'https://rpc.testnet.arc.network';
@@ -968,11 +971,17 @@ async function sendUSDC() {
 
     // Save to recent contacts
     addContact(toAddr);
-    // Save to local tx history
-    addTxHistory({ hash: tx.hash, to: toAddr, amount: amountStr, timestamp: Date.now(), type: 'send' });
+    // Log to backend (fire-and-forget — don't block navigation on it)
+    logToBackend({
+      hash:      tx.hash,
+      from:      currentAddress,
+      to:        toAddr,
+      amount:    amountStr,
+      timestamp: Math.floor(Date.now() / 1000),
+      status:    'confirmed',
+    });
 
     document.getElementById('sendingOverlay').classList.remove('show');
-    // Navigate to tx status page
     window.location.href = `/tx?hash=${tx.hash}&amount=${encodeURIComponent(amountStr)}&to=${encodeURIComponent(toAddr)}`;
   } catch (err) {
     document.getElementById('sendingOverlay').classList.remove('show');
@@ -1017,38 +1026,55 @@ function fillContact(addr) {
   document.getElementById('amountInput').focus();
 }
 
-// ——— TX History ———
-function getTxHistory() {
-  try { return JSON.parse(localStorage.getItem(TX_HISTORY_KEY) || '[]'); } catch { return []; }
+// ——— Backend API ─────────────────────────────────────────────────────────────
+
+async function logToBackend(tx) {
+  try {
+    await fetch(`${BACKEND_URL}/api/transactions`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(tx),
+    });
+  } catch { /* backend offline — silently ignore, tx already on-chain */ }
 }
-function addTxHistory(tx) {
-  let txs = getTxHistory();
-  txs.unshift(tx);
-  txs = txs.slice(0, 20);
-  localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(txs));
-}
-function renderTxHistory() {
-  const txs = getTxHistory();
+
+async function renderTxHistory() {
+  if (!currentAddress) return;
   const el = document.getElementById('txList');
+
+  // Skeleton loader while fetching
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">
+    ${[1,2,3].map(() => `<div class="skeleton" style="height:56px;border-radius:10px"></div>`).join('')}
+  </div>`;
+
+  let txs = [];
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/transactions/${currentAddress}`);
+    if (res.ok) {
+      const data = await res.json();
+      txs = data.transactions || [];
+    }
+  } catch { /* backend offline — fall through to empty state */ }
+
   if (!txs.length) {
     el.innerHTML = '<p class="tx-empty">No transactions yet.<br>Send USDC to get started.</p>';
     return;
   }
+
   el.innerHTML = txs.map(tx => {
-    const isSend = tx.type === 'send';
-    const addr = tx.to || tx.from || '';
+    const isSend  = tx.direction === 'out';
+    const addr    = isSend ? tx.to : tx.from;
     const shortAddr = addr.slice(0,8) + '…' + addr.slice(-6);
-    const time = timeAgo(tx.timestamp);
-    const amount = isSend ? `−${tx.amount}` : `+${tx.amount}`;
-    const cls = isSend ? 'out' : 'in';
-    const icon = isSend ? '→' : '←';
+    const ts      = tx.timestamp ? tx.timestamp * 1000 : Date.now();
+    const time    = timeAgo(ts);
+    const amount  = isSend ? `−${tx.amount}` : `+${tx.amount}`;
     return `<a class="tx-item" href="${ARC_EXPLORER}/tx/${tx.hash}" target="_blank">
-      <div class="tx-icon ${isSend ? 'send' : 'recv'}">${icon}</div>
+      <div class="tx-icon ${isSend ? 'send' : 'recv'}">${isSend ? '→' : '←'}</div>
       <div class="tx-body">
         <div class="tx-addr">${shortAddr}</div>
         <div class="tx-time">${time}</div>
       </div>
-      <div class="tx-amount ${cls}">${amount} USDC</div>
+      <div class="tx-amount ${isSend ? 'out' : 'in'}">${amount} USDC</div>
     </a>`;
   }).join('');
 }

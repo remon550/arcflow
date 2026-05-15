@@ -481,7 +481,10 @@ body {
 <div class="confetti-container" id="confettiContainer"></div>
 
 <script>
-// ——— Arc Constants ———
+// ——— Backend Config ───────────────────────────────────────────────────────────
+const BACKEND_URL = 'https://api.arcflow.live'; // local: http://localhost:3001
+
+// ——— Arc Constants ───────────────────────────────────────────────────────────
 const ARC_RPC_URL = 'https://rpc.testnet.arc.network';
 const ARC_EXPLORER = 'https://testnet.arcscan.app';
 
@@ -625,6 +628,25 @@ function showSuccess(receipt) {
 
   // Actions
   document.getElementById('actionsWrap').style.display = 'flex';
+
+  // Log confirmed tx to backend (fire-and-forget)
+  const gasUsedFormatted = receipt.gasUsed
+    ? ethers.formatUnits(receipt.gasUsed, 18)
+    : null;
+  fetch(`${BACKEND_URL}/api/transactions`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      hash:        txHash,
+      from:        receipt.from  || '',
+      to:          txTo          || receipt.to || '',
+      amount:      txAmount,
+      timestamp:   Math.floor(Date.now() / 1000),
+      status:      'confirmed',
+      gasUsed:     gasUsedFormatted,
+      blockNumber: receipt.blockNumber ? Number(receipt.blockNumber) : null,
+    }),
+  }).catch(() => {}); // backend offline — tx is already on-chain
 
   // Confetti!
   fireConfetti();
