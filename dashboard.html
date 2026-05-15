@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcFlow Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+:root {
+  --cream: #FDF6EC;
+  --peach: #FCDFD0;
+  --mint: #D7ECE2;
+  --lilac: #E5E2FB;
+  --coral: #F47A5B;
+  --coral-dk: #E25A3C;
+  --coral-soft: #FFD9CC;
+  --ink: #0E2D5B;
+  --ink-2: #2E4974;
+  --ink-3: #6B7E9E;
+  --ink-4: #94A4BD;
+  --line: #E4DACB;
+  --line-2: rgba(14,45,91,0.10);
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --shadow-soft: 0 18px 50px -22px rgba(14,45,91,0.18);
+  --shadow-soft-2: 0 30px 70px -30px rgba(14,45,91,0.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ——— TOPBAR ——— */
+.topbar {
+  background: rgba(253,246,236,0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width:9px; height:9px; border-radius:50%; background:var(--coral); display:inline-block; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mint);
+  color: #1A7A4A;
+  border-radius: var(--r-pill);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.network-badge .ndot { width:7px;height:7px;background:#22C55E;border-radius:50%;animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.network-badge.wrong { background: var(--peach); color: var(--coral-dk); }
+.network-badge.wrong .ndot { background: var(--coral); }
+
+.wallet-chip-wrap {
+  position: relative;
+}
+.wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 6px 14px 6px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+}
+.wallet-chip:hover { border-color: var(--ink-3); background: var(--cream); }
+.wallet-chip.open { border-color: var(--coral); background: var(--cream); }
+.wallet-avatar {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--coral) 0%, var(--lilac) 100%);
+  flex-shrink: 0;
+}
+.wallet-chevron {
+  font-size: 10px;
+  color: var(--ink-4);
+  margin-left: 2px;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.wallet-chip.open .wallet-chevron { transform: rotate(180deg); }
+
+.wallet-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-soft-2);
+  min-width: 200px;
+  overflow: hidden;
+  z-index: 100;
+  animation: dropIn 0.15s ease;
+}
+.wallet-dropdown.open { display: block; }
+@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+.dropdown-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.dropdown-header .dh-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-4);
+  margin-bottom: 3px;
+}
+.dropdown-header .dh-addr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-weight: 500;
+  word-break: break-all;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.12s;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: 'Nunito', sans-serif;
+  text-decoration: none;
+}
+.dropdown-item:hover { background: var(--cream); }
+.dropdown-item .di-icon {
+  width: 28px; height: 28px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.dropdown-item .di-icon.copy { background: var(--lilac); }
+.dropdown-item .di-icon.scan { background: var(--mint); }
+.dropdown-item .di-icon.logout { background: var(--peach); }
+.dropdown-divider { height: 1px; background: var(--line-2); margin: 4px 0; }
+.dropdown-item.logout-item { color: var(--coral-dk); }
+
+/* ——— MAIN LAYOUT ——— */
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 720px) { .main { grid-template-columns: 1fr; } }
+
+/* ——— CARDS ——— */
+.card {
+  background: #fff;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-soft);
+  padding: 28px;
+}
+.card-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-4);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.refresh-btn {
+  width: 28px; height: 28px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3);
+  font-size: 14px;
+  transition: border-color 0.2s, transform 0.3s;
+}
+.refresh-btn:hover { border-color: var(--coral); color: var(--coral); }
+.refresh-btn.spinning { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ——— BALANCE ——— */
+.balance-card { grid-column: span 2; }
+@media (max-width: 720px) { .balance-card { grid-column: span 1; } }
+.balance-amount {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+.balance-usd {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.balance-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.balance-addr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--ink-3);
+  background: var(--cream);
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.balance-addr:hover { background: var(--peach); }
+.copy-icon { font-size: 13px; }
+
+/* Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--line) 25%, rgba(228,218,203,0.5) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ——— SEND FORM ——— */
+.send-card { grid-row: span 2; }
+.form-group { margin-bottom: 16px; }
+.form-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-3);
+  margin-bottom: 7px;
+  display: block;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(244,122,91,0.12);
+}
+.form-input.error { border-color: #E53E3E; }
+.form-input::placeholder { color: var(--ink-4); font-size: 14px; }
+.form-input-mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+.amount-wrap { position: relative; }
+.amount-suffix {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.amount-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 7px;
+}
+.amount-hint span { font-size: 12px; font-weight: 600; color: var(--ink-4); }
+.max-btn {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--coral);
+  background: var(--peach);
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.max-btn:hover { background: var(--coral-soft); }
+
+.send-btn {
+  width: 100%;
+  background: var(--coral);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 15px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 8px 24px -8px rgba(244,122,91,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 8px;
+}
+.send-btn:hover:not(:disabled) { background: var(--coral-dk); transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(244,122,91,0.55); }
+.send-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.form-error {
+  font-size: 12px;
+  font-weight: 700;
+  color: #E53E3E;
+  margin-top: 6px;
+  display: none;
+}
+.form-error.show { display: block; }
+
+/* ——— CONTACTS ——— */
+.contact-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.contact-chip:hover { border-color: var(--coral); background: var(--peach); color: var(--coral-dk); }
+.contact-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--coral) 0%, #B67DFF 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  color: white;
+  font-weight: 800;
+}
+.contacts-empty {
+  font-size: 13px;
+  color: var(--ink-4);
+  font-weight: 600;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ——— RECENT TXS ——— */
+.tx-list { display: flex; flex-direction: column; gap: 10px; }
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--cream);
+  border: 1px solid var(--line-2);
+  transition: background 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.tx-item:hover { background: var(--peach); }
+.tx-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.tx-icon.send { background: var(--peach); }
+.tx-icon.recv { background: var(--mint); }
+.tx-body { flex: 1; min-width: 0; }
+.tx-addr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tx-time { font-size: 11px; color: var(--ink-4); font-weight: 600; margin-top: 2px; }
+.tx-amount { font-size: 15px; font-weight: 800; }
+.tx-amount.out { color: var(--coral-dk); }
+.tx-amount.in { color: #1A7A4A; }
+.tx-empty { font-size: 13px; color: var(--ink-4); font-weight: 600; text-align: center; padding: 24px 0; }
+
+/* ——— WRONG NETWORK MODAL ——— */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(14,45,91,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 40px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-soft-2);
+  text-align: center;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.modal-icon { font-size: 48px; margin-bottom: 16px; }
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.modal-body { font-size: 15px; color: var(--ink-3); font-weight: 500; line-height: 1.6; margin-bottom: 24px; }
+.modal-chain {
+  background: var(--cream);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.modal-chain-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; }
+.modal-chain-row .k { color: var(--ink-3); font-weight: 600; }
+.modal-chain-row .v { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink); font-weight: 500; }
+.btn-switch {
+  width: 100%;
+  background: var(--coral);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 10px;
+}
+.btn-switch:hover { background: var(--coral-dk); }
+.btn-disconnect {
+  background: transparent;
+  color: var(--ink-3);
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ——— NOT CONNECTED ——— */
+.connect-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 40px 24px;
+  text-align: center;
+}
+.connect-gate h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.connect-gate p { font-size: 16px; color: var(--ink-3); font-weight: 500; margin-bottom: 28px; max-width: 400px; }
+.btn-connect-big {
+  background: var(--coral);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 16px 36px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 28px -8px rgba(244,122,91,0.5);
+  transition: background 0.2s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-connect-big:hover { background: var(--coral-dk); transform: translateY(-2px); }
+
+/* ——— SENDING OVERLAY ——— */
+#sendingOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(14,45,91,0.4);
+  backdrop-filter: blur(6px);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+#sendingOverlay.show { display: flex; }
+.sending-box {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: var(--shadow-soft-2);
+}
+.spinner {
+  width: 56px; height: 56px;
+  border: 4px solid var(--line);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: spin 0.9s linear infinite;
+}
+.sending-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.sending-sub { font-size: 14px; color: var(--ink-3); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="/" class="nav-logo">
+    <span class="logo-dot"></span>ArcFlow
+  </a>
+  <div class="topbar-right">
+    <div class="network-badge" id="networkBadge">
+      <span class="ndot"></span>
+      Arc Testnet
+    </div>
+    <div class="wallet-chip-wrap" id="walletChipWrap">
+      <div class="wallet-chip" id="walletChip" onclick="toggleDropdown()">
+        <div class="wallet-avatar"></div>
+        <span id="walletChipAddr">Not connected</span>
+        <span class="wallet-chevron">▾</span>
+      </div>
+      <div class="wallet-dropdown" id="walletDropdown">
+        <div class="dropdown-header">
+          <div class="dh-label">Connected wallet</div>
+          <div class="dh-addr" id="dropdownAddr">—</div>
+        </div>
+        <button class="dropdown-item" onclick="copyAddress()">
+          <span class="di-icon copy">⎘</span> Copy Address
+        </button>
+        <a class="dropdown-item" id="dropdownScanLink" href="#" target="_blank">
+          <span class="di-icon scan">↗</span> View on ArcScan
+        </a>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item logout-item" onclick="disconnectWallet()">
+          <span class="di-icon logout">⏏</span> Disconnect
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- NOT CONNECTED GATE -->
+<div id="connectGate" class="connect-gate" style="display:none">
+  <div style="font-size:64px;margin-bottom:24px">🦊</div>
+  <h2>Connect your wallet</h2>
+  <p>Connect MetaMask to view your USDC balance and send payments on Arc Testnet.</p>
+  <button class="btn-connect-big" onclick="connectWallet()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+    Connect MetaMask
+  </button>
+  <p style="margin-top:20px;font-size:13px;color:var(--ink-4)">Don't have MetaMask? <a href="https://metamask.io" target="_blank" style="color:var(--coral);font-weight:700">Download it here</a></p>
+</div>
+
+<!-- DASHBOARD MAIN (hidden until connected) -->
+<main class="main" id="dashMain" style="display:none">
+
+  <!-- BALANCE -->
+  <div class="card balance-card">
+    <div class="card-label">
+      USDC Balance
+      <button class="refresh-btn" id="refreshBtn" onclick="loadBalance()" title="Refresh balance">↻</button>
+    </div>
+    <div class="balance-amount" id="balanceDisplay">
+      <span class="skeleton" style="width:220px;height:54px;display:block"></span>
+    </div>
+    <div class="balance-usd" id="balanceSub" style="visibility:hidden">≈ same as USD · Arc Testnet</div>
+    <div class="balance-bottom">
+      <div class="balance-addr" id="addrDisplay" onclick="copyAddress()">
+        <span id="addrText">Loading...</span>
+        <span class="copy-icon" id="copyIcon">⎘</span>
+      </div>
+      <a href="https://testnet.arcscan.app/address/" id="explorerLink" target="_blank"
+         style="font-size:12px;font-weight:700;color:var(--coral);text-decoration:none;">
+        View on ArcScan ↗
+      </a>
+    </div>
+  </div>
+
+  <!-- SEND FORM -->
+  <div class="card send-card" id="sendCard">
+    <div class="card-label">Send USDC</div>
+    <div class="form-group">
+      <label class="form-label" for="toInput">Recipient Address</label>
+      <input class="form-input form-input-mono" id="toInput" type="text"
+             placeholder="0x..." autocomplete="off" spellcheck="false">
+      <div class="form-error" id="toError">Please enter a valid Ethereum address</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="amountInput">Amount</label>
+      <div class="amount-wrap">
+        <input class="form-input" id="amountInput" type="number"
+               placeholder="0.00" step="0.000001" min="0" style="padding-right:65px">
+        <span class="amount-suffix">USDC</span>
+      </div>
+      <div class="amount-hint">
+        <span>Balance: <span id="amountBalHint">—</span> USDC</span>
+        <button class="max-btn" onclick="fillMax()">MAX</button>
+      </div>
+      <div class="form-error" id="amountError">Insufficient balance</div>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendUSDC()" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Send USDC
+    </button>
+    <p style="font-size:12px;color:var(--ink-4);text-align:center;margin-top:12px;font-weight:600">
+      Gas is paid in USDC · Arc Testnet only
+    </p>
+  </div>
+
+  <!-- RECENT CONTACTS -->
+  <div class="card">
+    <div class="card-label">Recent Contacts</div>
+    <div class="contact-chips" id="contactChips">
+      <p class="contacts-empty">No recent contacts yet.<br>Send your first payment!</p>
+    </div>
+  </div>
+
+  <!-- RECENT TRANSACTIONS -->
+  <div class="card" style="grid-column:span 2" id="txCard">
+    <div class="card-label">Recent Transactions</div>
+    <div class="tx-list" id="txList">
+      <p class="tx-empty">No transactions yet.<br>Send USDC to get started.</p>
+    </div>
+  </div>
+</main>
+
+<!-- WRONG NETWORK MODAL -->
+<div class="modal-overlay" id="wrongNetModal">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Wrong Network</div>
+    <p class="modal-body">ArcFlow only works on Arc Testnet. Please switch your wallet to continue.</p>
+    <div class="modal-chain">
+      <div class="modal-chain-row"><span class="k">Network</span><span class="v">Arc Testnet</span></div>
+      <div class="modal-chain-row"><span class="k">Chain ID</span><span class="v">5042002</span></div>
+      <div class="modal-chain-row"><span class="k">RPC</span><span class="v">rpc.testnet.arc.network</span></div>
+      <div class="modal-chain-row"><span class="k">Currency</span><span class="v">USDC (18 dec)</span></div>
+    </div>
+    <button class="btn-switch" onclick="switchToArc()">Switch to Arc Testnet</button>
+    <button class="btn-disconnect" onclick="disconnectWallet()">Disconnect Wallet</button>
+  </div>
+</div>
+
+<!-- SENDING OVERLAY -->
+<div id="sendingOverlay">
+  <div class="sending-box">
+    <div class="spinner"></div>
+    <div class="sending-title">Sending USDC…</div>
+    <p class="sending-sub">Waiting for MetaMask confirmation</p>
+  </div>
+</div>
+
+<script>
+// ——— Arc Network Constants ———
+const ARC_CHAIN_ID = 5042002;
+const ARC_CHAIN_ID_HEX = '0x4CEF52';
+const ARC_RPC_URL = 'https://rpc.testnet.arc.network';
+const ARC_CHAIN_NAME = 'Arc Testnet';
+const ARC_CURRENCY = { name: 'USDC', symbol: 'USDC', decimals: 18 };
+const ARC_EXPLORER = 'https://testnet.arcscan.app';
+const USDC_CONTRACT = '0x3600000000000000000000000000000000000000';
+const STORAGE_KEY = 'arcflow_wallet';
+const CONTACTS_KEY = 'arcflow_contacts';
+const TX_HISTORY_KEY = 'arcflow_txs';
+
+// ERC-20 minimal ABI for balanceOf and transfer
+const ERC20_ABI = [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function decimals() view returns (uint8)',
+];
+
+let currentAddress = null;
+let currentBalance = '0';
+let provider = null;
+
+// ——— Init ———
+window.addEventListener('load', async () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    currentAddress = saved;
+    showDashboard();
+    await checkNetwork();
+    loadBalance();
+    renderContacts();
+    renderTxHistory();
+  } else {
+    document.getElementById('connectGate').style.display = 'flex';
+  }
+
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accs) => {
+      if (!accs.length) { disconnectWallet(); } else {
+        currentAddress = accs[0];
+        localStorage.setItem(STORAGE_KEY, currentAddress);
+        updateWalletUI();
+        loadBalance();
+      }
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  }
+});
+
+function showDashboard() {
+  document.getElementById('connectGate').style.display = 'none';
+  document.getElementById('dashMain').style.display = 'grid';
+  updateWalletUI();
+}
+
+function updateWalletUI() {
+  if (!currentAddress) return;
+  const short = currentAddress.slice(0,6) + '…' + currentAddress.slice(-4);
+  document.getElementById('walletChipAddr').textContent = short;
+  document.getElementById('addrText').textContent = currentAddress.slice(0,10) + '…' + currentAddress.slice(-8);
+  document.getElementById('explorerLink').href = ARC_EXPLORER + '/address/' + currentAddress;
+  // Dropdown
+  document.getElementById('dropdownAddr').textContent = currentAddress.slice(0,10) + '…' + currentAddress.slice(-10);
+  document.getElementById('dropdownScanLink').href = ARC_EXPLORER + '/address/' + currentAddress;
+}
+
+function toggleDropdown() {
+  const chip = document.getElementById('walletChip');
+  const dropdown = document.getElementById('walletDropdown');
+  const isOpen = dropdown.classList.contains('open');
+  chip.classList.toggle('open', !isOpen);
+  dropdown.classList.toggle('open', !isOpen);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('walletChipWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('walletChip').classList.remove('open');
+    document.getElementById('walletDropdown').classList.remove('open');
+  }
+});
+
+// ——— Network Check ———
+async function checkNetwork() {
+  if (!window.ethereum) return;
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (parseInt(chainId, 16) !== ARC_CHAIN_ID) {
+      showWrongNetModal();
+    } else {
+      document.getElementById('networkBadge').className = 'network-badge';
+    }
+  } catch(e) {}
+}
+
+function showWrongNetModal() {
+  document.getElementById('networkBadge').className = 'network-badge wrong';
+  document.getElementById('networkBadge').innerHTML = '<span class="ndot"></span> Wrong Network';
+  document.getElementById('wrongNetModal').classList.add('open');
+}
+
+async function switchToArc() {
+  if (!window.ethereum) return;
+  const btn = document.querySelector('.btn-switch');
+  const setLoading = (on) => {
+    if (!btn) return;
+    btn.disabled = on;
+    btn.textContent = on ? 'Waiting for MetaMask…' : 'Switch to Arc Testnet';
+  };
+  setLoading(true);
+  try {
+    // Try switching first — works if Arc is already added to MetaMask
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARC_CHAIN_ID_HEX }],
+    });
+    document.getElementById('wrongNetModal').classList.remove('open');
+    window.location.reload();
+  } catch (switchErr) {
+    // User rejected switch
+    if (switchErr.code === 4001) { setLoading(false); return; }
+    // Chain not yet added (4902) or any other failure — attempt to add it
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: ARC_CHAIN_ID_HEX,
+          chainName: ARC_CHAIN_NAME,
+          nativeCurrency: ARC_CURRENCY,
+          rpcUrls: [ARC_RPC_URL],
+          blockExplorerUrls: [ARC_EXPLORER],
+        }],
+      });
+      document.getElementById('wrongNetModal').classList.remove('open');
+      window.location.reload();
+    } catch (addErr) {
+      setLoading(false);
+      if (addErr.code !== 4001) {
+        alert('Could not add Arc Testnet to MetaMask:\n' + (addErr.message || addErr));
+      }
+    }
+  }
+}
+
+// ——— Load Balance ———
+async function loadBalance() {
+  if (!currentAddress) return;
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  try {
+    // Use ethers.js with Arc RPC to get native USDC balance (18 decimals)
+    const rpcProvider = new ethers.JsonRpcProvider(ARC_RPC_URL);
+    const rawBalance = await rpcProvider.getBalance(currentAddress);
+    currentBalance = ethers.formatUnits(rawBalance, 18);
+    const displayBal = parseFloat(currentBalance).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    document.getElementById('balanceDisplay').innerHTML =
+      `<span style="color:var(--ink)">${displayBal}</span><span style="font-size:0.4em;color:var(--ink-3);vertical-align:super;margin-left:4px">USDC</span>`;
+    document.getElementById('balanceSub').style.visibility = 'visible';
+    document.getElementById('amountBalHint').textContent = displayBal;
+    updateSendBtn();
+  } catch(e) {
+    document.getElementById('balanceDisplay').textContent = 'Error loading balance';
+    console.error('Balance load error:', e);
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+// ——— Send USDC ———
+async function sendUSDC() {
+  const toAddr = document.getElementById('toInput').value.trim();
+  const amountStr = document.getElementById('amountInput').value.trim();
+  let valid = true;
+
+  // Validate address
+  if (!ethers.isAddress(toAddr)) {
+    document.getElementById('toInput').classList.add('error');
+    document.getElementById('toError').classList.add('show');
+    valid = false;
+  } else {
+    document.getElementById('toInput').classList.remove('error');
+    document.getElementById('toError').classList.remove('show');
+  }
+
+  // Validate amount
+  const amount = parseFloat(amountStr);
+  const balance = parseFloat(currentBalance);
+  if (!amountStr || isNaN(amount) || amount <= 0 || amount > balance) {
+    document.getElementById('amountInput').classList.add('error');
+    document.getElementById('amountError').classList.add('show');
+    document.getElementById('amountError').textContent =
+      (!amountStr || isNaN(amount) || amount <= 0) ? 'Enter a valid amount' : 'Insufficient balance';
+    valid = false;
+  } else {
+    document.getElementById('amountInput').classList.remove('error');
+    document.getElementById('amountError').classList.remove('show');
+  }
+
+  if (!valid) return;
+
+  // Show sending overlay
+  document.getElementById('sendingOverlay').classList.add('show');
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    if (!window.ethereum) throw new Error('MetaMask not found');
+    const web3Provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await web3Provider.getSigner();
+
+    // Send native USDC (18 decimals) — on Arc, native token IS USDC
+    const valueWei = ethers.parseUnits(amountStr, 18);
+    const tx = await signer.sendTransaction({
+      to: toAddr,
+      value: valueWei,
+    });
+
+    // Save to recent contacts
+    addContact(toAddr);
+    // Save to local tx history
+    addTxHistory({ hash: tx.hash, to: toAddr, amount: amountStr, timestamp: Date.now(), type: 'send' });
+
+    document.getElementById('sendingOverlay').classList.remove('show');
+    // Navigate to tx status page
+    window.location.href = `/tx?hash=${tx.hash}&amount=${encodeURIComponent(amountStr)}&to=${encodeURIComponent(toAddr)}`;
+  } catch (err) {
+    document.getElementById('sendingOverlay').classList.remove('show');
+    document.getElementById('sendBtn').disabled = false;
+    if (err.code !== 4001) {
+      alert('Transaction failed:\n' + (err.shortMessage || err.message));
+    }
+  }
+}
+
+// ——— Contacts ———
+function getContacts() {
+  try { return JSON.parse(localStorage.getItem(CONTACTS_KEY) || '[]'); } catch { return []; }
+}
+function addContact(addr) {
+  let contacts = getContacts().filter(c => c.toLowerCase() !== addr.toLowerCase());
+  contacts.unshift(addr);
+  contacts = contacts.slice(0, 8);
+  localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+  renderContacts();
+}
+function renderContacts() {
+  const contacts = getContacts();
+  const el = document.getElementById('contactChips');
+  if (!contacts.length) {
+    el.innerHTML = '<p class="contacts-empty">No recent contacts yet.<br>Send your first payment!</p>';
+    return;
+  }
+  el.innerHTML = contacts.map(addr => {
+    const short = addr.slice(0,6) + '…' + addr.slice(-4);
+    const initials = addr.slice(2,4).toUpperCase();
+    return `<div class="contact-chip" onclick="fillContact('${addr}')">
+      <div class="contact-avatar">${initials}</div>
+      ${short}
+    </div>`;
+  }).join('');
+}
+function fillContact(addr) {
+  document.getElementById('toInput').value = addr;
+  document.getElementById('toInput').classList.remove('error');
+  document.getElementById('toError').classList.remove('show');
+  document.getElementById('amountInput').focus();
+}
+
+// ——— TX History ———
+function getTxHistory() {
+  try { return JSON.parse(localStorage.getItem(TX_HISTORY_KEY) || '[]'); } catch { return []; }
+}
+function addTxHistory(tx) {
+  let txs = getTxHistory();
+  txs.unshift(tx);
+  txs = txs.slice(0, 20);
+  localStorage.setItem(TX_HISTORY_KEY, JSON.stringify(txs));
+}
+function renderTxHistory() {
+  const txs = getTxHistory();
+  const el = document.getElementById('txList');
+  if (!txs.length) {
+    el.innerHTML = '<p class="tx-empty">No transactions yet.<br>Send USDC to get started.</p>';
+    return;
+  }
+  el.innerHTML = txs.map(tx => {
+    const isSend = tx.type === 'send';
+    const addr = tx.to || tx.from || '';
+    const shortAddr = addr.slice(0,8) + '…' + addr.slice(-6);
+    const time = timeAgo(tx.timestamp);
+    const amount = isSend ? `−${tx.amount}` : `+${tx.amount}`;
+    const cls = isSend ? 'out' : 'in';
+    const icon = isSend ? '→' : '←';
+    return `<a class="tx-item" href="${ARC_EXPLORER}/tx/${tx.hash}" target="_blank">
+      <div class="tx-icon ${isSend ? 'send' : 'recv'}">${icon}</div>
+      <div class="tx-body">
+        <div class="tx-addr">${shortAddr}</div>
+        <div class="tx-time">${time}</div>
+      </div>
+      <div class="tx-amount ${cls}">${amount} USDC</div>
+    </a>`;
+  }).join('');
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'min ago';
+  if (s < 86400) return Math.floor(s/3600) + 'hr ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+// ——— Helpers ———
+function fillMax() {
+  if (!currentBalance || parseFloat(currentBalance) <= 0) return;
+  // Reserve a tiny amount for gas (0.001 USDC)
+  const maxSend = Math.max(0, parseFloat(currentBalance) - 0.001);
+  document.getElementById('amountInput').value = maxSend.toFixed(6);
+  updateSendBtn();
+}
+function updateSendBtn() {
+  const to = document.getElementById('toInput').value.trim();
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  const balance = parseFloat(currentBalance);
+  const valid = ethers.isAddress(to) && !isNaN(amount) && amount > 0 && amount <= balance;
+  document.getElementById('sendBtn').disabled = !valid;
+}
+document.getElementById('toInput').addEventListener('input', updateSendBtn);
+document.getElementById('amountInput').addEventListener('input', updateSendBtn);
+
+function copyAddress() {
+  if (!currentAddress) return;
+  navigator.clipboard.writeText(currentAddress).then(() => {
+    // Close dropdown
+    document.getElementById('walletChip').classList.remove('open');
+    document.getElementById('walletDropdown').classList.remove('open');
+    // Flash copy icon in balance card
+    document.getElementById('copyIcon').textContent = '✓';
+    setTimeout(() => { document.getElementById('copyIcon').textContent = '⎘'; }, 1500);
+  });
+}
+
+// ——— Connect Wallet ———
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert('MetaMask not found.\n\nPlease install MetaMask from metamask.io and reload this page.');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    if (!accounts.length) return;
+    currentAddress = accounts[0];
+    localStorage.setItem(STORAGE_KEY, currentAddress);
+    showDashboard();
+    await checkNetwork();
+    loadBalance();
+    renderContacts();
+    renderTxHistory();
+  } catch (err) {
+    if (err.code !== 4001) alert('Connection failed: ' + err.message);
+  }
+}
+
+function disconnectWallet() {
+  document.getElementById('wrongNetModal').classList.remove('open');
+  localStorage.removeItem(STORAGE_KEY);
+  window.location.replace('/');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcFlow — Transaction Status</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+:root {
+  --cream: #FDF6EC;
+  --peach: #FCDFD0;
+  --mint: #D7ECE2;
+  --lilac: #E5E2FB;
+  --coral: #F47A5B;
+  --coral-dk: #E25A3C;
+  --coral-soft: #FFD9CC;
+  --ink: #0E2D5B;
+  --ink-2: #2E4974;
+  --ink-3: #6B7E9E;
+  --ink-4: #94A4BD;
+  --line: #E4DACB;
+  --line-2: rgba(14,45,91,0.10);
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --shadow-soft: 0 18px 50px -22px rgba(14,45,91,0.18);
+  --shadow-soft-2: 0 30px 70px -30px rgba(14,45,91,0.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ——— TOPBAR ——— */
+.topbar {
+  background: rgba(253,246,236,0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width:9px; height:9px; border-radius:50%; background:var(--coral); display:inline-block; }
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mint);
+  color: #1A7A4A;
+  border-radius: var(--r-pill);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.ndot { width:7px;height:7px;background:#22C55E;border-radius:50%;animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ——— PAGE CONTAINER ——— */
+.page {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px 80px;
+}
+.tx-container {
+  width: 100%;
+  max-width: 520px;
+  animation: fadeUp 0.4s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* ——— STATUS CARD ——— */
+.status-card {
+  background: #fff;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-soft-2);
+  padding: 48px 40px 36px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+@media (max-width: 480px) { .status-card { padding: 36px 24px 28px; } }
+
+/* Status icon states */
+.status-icon-wrap {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 36px;
+  transition: all 0.4s ease;
+}
+.status-icon-wrap.pending {
+  background: var(--peach);
+  border: 3px solid var(--coral-soft);
+  animation: pendingPulse 2s ease-in-out infinite;
+}
+.status-icon-wrap.success {
+  background: var(--mint);
+  border: 3px solid #A8DFC5;
+  animation: successBounce 0.6s ease;
+}
+.status-icon-wrap.failed {
+  background: #FDECEA;
+  border: 3px solid #F5C6C2;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244,122,91,0.3); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 12px rgba(244,122,91,0); }
+}
+@keyframes successBounce {
+  0% { transform: scale(0.7); opacity:0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity:1; }
+}
+
+/* Spinner for pending */
+.spinner-ring {
+  width: 56px;
+  height: 56px;
+  border: 4px solid rgba(244,122,91,0.2);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.status-title {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.status-sub {
+  font-size: 15px;
+  color: var(--ink-3);
+  font-weight: 500;
+  line-height: 1.6;
+  max-width: 360px;
+  margin: 0 auto 28px;
+}
+
+/* Amount display */
+.amount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 10px 24px;
+  margin-bottom: 28px;
+}
+.amount-badge .amount-num {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.amount-badge .amount-unit {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-3);
+  padding: 3px 10px;
+  background: var(--peach);
+  border-radius: var(--r-pill);
+}
+.amount-badge.success-badge {
+  background: var(--mint);
+  border-color: #A8DFC5;
+}
+.amount-badge.success-badge .amount-unit { background: rgba(255,255,255,0.6); color: #1A7A4A; }
+
+/* Details table */
+.tx-details {
+  background: var(--cream);
+  border-radius: var(--r-md);
+  padding: 20px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-key {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.detail-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+}
+.detail-val.mono-sm { font-size: 11px; }
+.detail-val a { color: var(--coral); text-decoration: none; font-weight: 700; }
+.detail-val a:hover { text-decoration: underline; }
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Nunito', sans-serif;
+}
+.status-pill.pending-pill { background: var(--peach); color: var(--coral-dk); }
+.status-pill.success-pill { background: var(--mint); color: #1A7A4A; }
+.status-pill.failed-pill { background: #FDECEA; color: #C53030; }
+
+/* ——— ACTIONS ——— */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-primary {
+  width: 100%;
+  background: var(--coral);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 15px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  box-shadow: 0 8px 24px -8px rgba(244,122,91,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-decoration: none;
+}
+.btn-primary:hover { background: var(--coral-dk); transform: translateY(-1px); }
+.btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--ink-2);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-decoration: none;
+}
+.btn-secondary:hover { border-color: var(--ink-2); background: rgba(14,45,91,0.04); }
+
+/* ——— EXPLORER CARD ——— */
+.explorer-card {
+  background: var(--ink);
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.explorer-card:hover { opacity: 0.9; }
+.explorer-left { display: flex; align-items: center; gap: 12px; }
+.explorer-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.1);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.explorer-text .et { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 700; }
+.explorer-text .ev {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+}
+.explorer-arrow { color: rgba(255,255,255,0.5); font-size: 18px; }
+
+/* ——— PROGRESS BAR ——— */
+.progress-wrap {
+  background: var(--line);
+  border-radius: var(--r-pill);
+  height: 4px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--coral);
+  border-radius: var(--r-pill);
+  transition: width 0.5s ease;
+  width: 10%;
+}
+.progress-bar.done { width: 100%; background: #22C55E; }
+.progress-bar.failed { width: 100%; background: #E53E3E; }
+
+/* ——— POLL TIMER ——— */
+.poll-timer {
+  font-size: 12px;
+  color: var(--ink-4);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ——— CONFETTI ——— */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="/" class="nav-logo">
+    <span class="logo-dot"></span>ArcFlow
+  </a>
+  <div class="network-badge">
+    <span class="ndot"></span>Arc Testnet
+  </div>
+</header>
+
+<!-- PAGE -->
+<div class="page">
+  <div class="tx-container">
+
+    <!-- STATUS CARD -->
+    <div class="status-card" id="statusCard">
+      <!-- Icon -->
+      <div class="status-icon-wrap pending" id="statusIconWrap">
+        <div class="spinner-ring" id="spinnerRing"></div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <!-- Title / Sub -->
+      <div class="status-title" id="statusTitle">Processing…</div>
+      <p class="status-sub" id="statusSub">Your USDC is on its way. This usually takes a few seconds on Arc Network.</p>
+
+      <!-- Poll timer -->
+      <p class="poll-timer" id="pollTimer">Checking in 2s…</p>
+
+      <!-- Amount badge -->
+      <div class="amount-badge" id="amountBadge">
+        <span class="amount-num" id="amountNum">—</span>
+        <span class="amount-unit">USDC</span>
+      </div>
+
+      <!-- Details -->
+      <div class="tx-details">
+        <div class="detail-row">
+          <span class="detail-key">Status</span>
+          <span class="detail-val"><span class="status-pill pending-pill" id="statusPill">Pending</span></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">To</span>
+          <span class="detail-val mono-sm" id="toVal">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Tx Hash</span>
+          <span class="detail-val mono-sm" id="hashVal">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Network</span>
+          <span class="detail-val">Arc Testnet · Chain 5042002</span>
+        </div>
+        <div class="detail-row" id="blockRow" style="display:none">
+          <span class="detail-key">Block</span>
+          <span class="detail-val" id="blockVal">—</span>
+        </div>
+        <div class="detail-row" id="gasRow" style="display:none">
+          <span class="detail-key">Gas Used</span>
+          <span class="detail-val" id="gasVal">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Time</span>
+          <span class="detail-val" id="timeVal">—</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions" id="actionsWrap" style="display:none">
+        <a href="/dashboard" class="btn-primary" id="sendAgainBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Again
+        </a>
+        <a href="#" class="btn-secondary" id="explorerBtn" target="_blank">
+          View on ArcScan ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- ArcScan link (always visible during pending) -->
+    <a class="explorer-card" id="explorerCard" href="#" target="_blank">
+      <div class="explorer-left">
+        <div class="explorer-icon">🔍</div>
+        <div class="explorer-text">
+          <div class="et">ArcScan Block Explorer</div>
+          <div class="ev" id="explorerHashShort">Loading transaction…</div>
+        </div>
+      </div>
+      <div class="explorer-arrow">↗</div>
+    </a>
+
+  </div>
+</div>
+
+<!-- CONFETTI CONTAINER -->
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// ——— Arc Constants ———
+const ARC_RPC_URL = 'https://rpc.testnet.arc.network';
+const ARC_EXPLORER = 'https://testnet.arcscan.app';
+
+// ——— Parse URL params ———
+const params = new URLSearchParams(window.location.search);
+const txHash = params.get('hash') || '';
+const txAmount = params.get('amount') || '0';
+const txTo = params.get('to') || '';
+
+// ——— State ———
+let pollInterval = null;
+let pollCount = 0;
+const MAX_POLLS = 60; // 2 min max
+let startTime = Date.now();
+
+// ——— Init ———
+window.addEventListener('load', () => {
+  if (!txHash) {
+    showError('No transaction hash found. Did you arrive here by mistake?');
+    return;
+  }
+  populateDetails();
+  startPolling();
+});
+
+function populateDetails() {
+  // Amount
+  const amt = parseFloat(txAmount);
+  document.getElementById('amountNum').textContent =
+    isNaN(amt) ? txAmount : amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+
+  // To
+  document.getElementById('toVal').textContent =
+    txTo ? (txTo.slice(0,10) + '…' + txTo.slice(-8)) : 'Unknown';
+
+  // Hash
+  const shortHash = txHash.slice(0,10) + '…' + txHash.slice(-8);
+  document.getElementById('hashVal').innerHTML =
+    `<a href="${ARC_EXPLORER}/tx/${txHash}" target="_blank">${shortHash}</a>`;
+  document.getElementById('explorerHashShort').textContent = shortHash;
+
+  // Explorer card link
+  document.getElementById('explorerCard').href = ARC_EXPLORER + '/tx/' + txHash;
+  document.getElementById('explorerBtn').href = ARC_EXPLORER + '/tx/' + txHash;
+
+  // Time
+  document.getElementById('timeVal').textContent = new Date().toLocaleTimeString();
+}
+
+// ——— Polling ———
+function startPolling() {
+  pollOnce(); // immediate first check
+  pollInterval = setInterval(() => {
+    pollCount++;
+    if (pollCount >= MAX_POLLS) {
+      clearInterval(pollInterval);
+      showFailed('Transaction timed out. It may still confirm — check ArcScan directly.');
+      return;
+    }
+    pollOnce();
+  }, 2000);
+
+  // Countdown timer UI
+  let countdown = 2;
+  const timerInterval = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) countdown = 2;
+    const el = document.getElementById('pollTimer');
+    if (el && el.textContent !== '') el.textContent = `Checking in ${countdown}s…`;
+    else clearInterval(timerInterval);
+  }, 1000);
+}
+
+async function pollOnce() {
+  try {
+    const provider = new ethers.JsonRpcProvider(ARC_RPC_URL);
+    const receipt = await provider.getTransactionReceipt(txHash);
+
+    // Update progress (animate up based on polls)
+    const pct = Math.min(90, 10 + pollCount * 4);
+    const bar = document.getElementById('progressBar');
+    if (bar && !bar.classList.contains('done') && !bar.classList.contains('failed')) {
+      bar.style.width = pct + '%';
+    }
+
+    if (receipt === null) {
+      // Still pending — that's fine, keep polling
+      return;
+    }
+
+    // Receipt found
+    clearInterval(pollInterval);
+    document.getElementById('pollTimer').textContent = '';
+
+    if (receipt.status === 1) {
+      showSuccess(receipt);
+    } else {
+      showFailed('Transaction was reverted by the network. The USDC was not sent.');
+    }
+  } catch (err) {
+    // RPC error — don't stop polling, just log
+    console.warn('Poll error:', err.message);
+  }
+}
+
+// ——— State transitions ———
+function showSuccess(receipt) {
+  // Icon
+  const iconWrap = document.getElementById('statusIconWrap');
+  iconWrap.className = 'status-icon-wrap success';
+  iconWrap.innerHTML = '✓';
+
+  // Progress bar
+  document.getElementById('progressBar').classList.add('done');
+
+  // Text
+  document.getElementById('statusTitle').textContent = 'Sent!';
+  document.getElementById('statusSub').textContent =
+    `${parseFloat(txAmount).toLocaleString('en-US',{minimumFractionDigits:2})} USDC was delivered successfully on Arc Network.`;
+
+  // Amount badge
+  document.getElementById('amountBadge').classList.add('success-badge');
+
+  // Status pill
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill success-pill';
+  pill.textContent = 'Confirmed';
+
+  // Block & gas details
+  if (receipt.blockNumber) {
+    document.getElementById('blockRow').style.display = 'flex';
+    document.getElementById('blockVal').innerHTML =
+      `<a href="${ARC_EXPLORER}/block/${receipt.blockNumber}" target="_blank">${receipt.blockNumber.toLocaleString()}</a>`;
+  }
+  if (receipt.gasUsed) {
+    document.getElementById('gasRow').style.display = 'flex';
+    const gasUsed = Number(receipt.gasUsed).toLocaleString();
+    const gasPrice = receipt.gasPrice ? ethers.formatUnits(receipt.gasPrice, 18) : null;
+    document.getElementById('gasVal').textContent = gasUsed + (gasPrice ? ` (${parseFloat(gasPrice * Number(receipt.gasUsed)).toFixed(8)} USDC)` : '');
+  }
+
+  // Actions
+  document.getElementById('actionsWrap').style.display = 'flex';
+
+  // Confetti!
+  fireConfetti();
+}
+
+function showFailed(reason) {
+  const iconWrap = document.getElementById('statusIconWrap');
+  iconWrap.className = 'status-icon-wrap failed';
+  iconWrap.innerHTML = '✕';
+
+  document.getElementById('progressBar').classList.add('failed');
+  document.getElementById('statusTitle').textContent = 'Failed';
+  document.getElementById('statusSub').textContent = reason || 'Something went wrong with this transaction.';
+  document.getElementById('pollTimer').textContent = '';
+
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill failed-pill';
+  pill.textContent = 'Failed';
+
+  // Actions
+  document.getElementById('actionsWrap').style.display = 'flex';
+  document.getElementById('sendAgainBtn').textContent = 'Try Again';
+}
+
+function showError(msg) {
+  document.getElementById('statusTitle').textContent = 'Error';
+  document.getElementById('statusSub').textContent = msg;
+  const iconWrap = document.getElementById('statusIconWrap');
+  iconWrap.className = 'status-icon-wrap failed';
+  iconWrap.innerHTML = '?';
+  document.getElementById('pollTimer').textContent = '';
+  document.getElementById('actionsWrap').style.display = 'flex';
+}
+
+// ——— Confetti ———
+function fireConfetti() {
+  const colors = ['#F47A5B','#0E2D5B','#D7ECE2','#E5E2FB','#FCDFD0','#FFD9CC'];
+  const container = document.getElementById('confettiContainer');
+  for (let i = 0; i < 72; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (Math.random() * 10 + 5) + 'px';
+    piece.style.height = (Math.random() * 10 + 5) + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    const duration = (Math.random() * 2 + 2).toFixed(2);
+    const delay = (Math.random() * 0.8).toFixed(2);
+    piece.style.animation = `confettiFall ${duration}s ${delay}s linear forwards`;
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), (parseFloat(duration) + parseFloat(delay)) * 1000 + 100);
+  }
+}
+</script>
+</body>
+</html>
