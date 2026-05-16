@@ -1657,6 +1657,8 @@ async function switchToArc() {
 // ——— Live Stats from Backend ───────────────────────────────────────────────
 function animateCount(el, target, prefix = '') {
   if (!el) return;
+  el.textContent = prefix + '0';
+  if (target === 0) return;
   const from = 0;
   const dur  = 1200;
   const t0   = performance.now();
@@ -1687,10 +1689,17 @@ async function loadStats() {
   }
 }
 
-// Load stats when the section scrolls into view
+// Load stats immediately, then animate on scroll if not yet done
+let statsLoaded = false;
+async function loadStatsOnce() {
+  if (statsLoaded) return;
+  statsLoaded = true;
+  await loadStats();
+}
+loadStatsOnce();
 const statsObserverOnce = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting) { loadStats(); statsObserverOnce.disconnect(); }
-}, { threshold: 0.2 });
+  if (entries[0].isIntersecting) { loadStatsOnce(); statsObserverOnce.disconnect(); }
+}, { threshold: 0 });
 const statsSection = document.getElementById('stats');
 if (statsSection) statsObserverOnce.observe(statsSection);
 
