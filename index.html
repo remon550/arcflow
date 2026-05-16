@@ -1655,27 +1655,30 @@ async function switchToArc() {
 })();
 
 // ——— Live Stats from Backend ───────────────────────────────────────────────
+function animateCount(el, target, prefix = '') {
+  if (!el) return;
+  const from = 0;
+  const dur  = 1200;
+  const t0   = performance.now();
+  function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = Math.floor(from + (target - from) * ease);
+    el.textContent = prefix + val.toLocaleString();
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 async function loadStats() {
   try {
     const res  = await fetch(`${BACKEND_URL}/api/stats`);
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('not ok');
     const data = await res.json();
-
-    function animateCount(el, target, prefix = '', suffix = '') {
-      if (!el) return;
-      let start = 0;
-      const step = target / 60;
-      const timer = setInterval(() => {
-        start = Math.min(start + step, target);
-        el.textContent = prefix + Math.floor(start).toLocaleString() + suffix;
-        if (start >= target) clearInterval(timer);
-      }, 16);
-    }
-
-    animateCount(document.getElementById('stat-txs'),     data.totalTransactions);
-    animateCount(document.getElementById('stat-vol'),     Math.floor(parseFloat(data.totalVolumeUSDC)), '$');
-    animateCount(document.getElementById('stat-wallets'), data.uniqueWallets);
-    animateCount(document.getElementById('stat-saved'),   Math.floor(parseFloat(data.totalGasSaved)), '$');
+    animateCount(document.getElementById('stat-txs'),     data.totalTransactions      || 0);
+    animateCount(document.getElementById('stat-vol'),     Math.floor(parseFloat(data.totalVolumeUSDC) || 0), '$');
+    animateCount(document.getElementById('stat-wallets'), data.uniqueWallets           || 0);
+    animateCount(document.getElementById('stat-saved'),   Math.floor(parseFloat(data.totalGasSaved)   || 0), '$');
   } catch {
     animateCount(document.getElementById('stat-txs'),     0);
     animateCount(document.getElementById('stat-vol'),     0, '$');
