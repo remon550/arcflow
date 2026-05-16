@@ -709,6 +709,30 @@ body {
     </div>
   </div>
 
+  <!-- YOUR PAYMENT LINK -->
+  <div class="card">
+    <div class="card-label">Receive USDC</div>
+    <p style="font-size:13px;color:var(--ink-3);font-weight:600;line-height:1.55;margin-bottom:14px;">
+      Share this link to receive USDC without sharing your full wallet address
+    </p>
+    <div style="background:var(--cream);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;cursor:pointer;" onclick="copyPayLink()" title="Click to copy">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);font-weight:500;word-break:break-all;line-height:1.5;" id="payLinkText">—</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+      <button onclick="copyPayLink()" id="payLinkCopyBtn"
+        style="background:var(--coral);color:#fff;border:none;border-radius:var(--r-pill);padding:9px 14px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:background 0.2s;">
+        COPY
+      </button>
+      <button onclick="sharePayLink()"
+        style="background:transparent;color:var(--ink-2);border:1.5px solid var(--line);border-radius:var(--r-pill);padding:9px 14px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:border-color 0.2s;">
+        SHARE
+      </button>
+    </div>
+    <a href="/receive" style="font-size:13px;font-weight:800;color:var(--coral);text-decoration:none;display:block;text-align:center;">
+      CUSTOMIZE →
+    </a>
+  </div>
+
   <!-- RECENT TRANSACTIONS -->
   <div class="card" style="grid-column:span 2" id="txCard">
     <div class="card-label">Recent Transactions</div>
@@ -802,6 +826,7 @@ function showDashboard() {
   document.getElementById('connectGate').style.display = 'none';
   document.getElementById('dashMain').style.display = 'grid';
   updateWalletUI();
+  updatePayLinkDisplay();
 }
 
 function updateWalletUI() {
@@ -1141,6 +1166,35 @@ function disconnectWallet() {
   document.getElementById('wrongNetModal').classList.remove('open');
   localStorage.removeItem(STORAGE_KEY);
   window.location.replace('/');
+}
+
+// ——— Payment Link ─────────────────────────────────────────────────────────────
+function buildPayLink(addr) {
+  return 'https://arcflow.live/pay?to=' + addr;
+}
+function updatePayLinkDisplay() {
+  if (!currentAddress) return;
+  document.getElementById('payLinkText').textContent = buildPayLink(currentAddress);
+}
+function copyPayLink() {
+  if (!currentAddress) return;
+  const url = buildPayLink(currentAddress);
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('payLinkCopyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'COPIED ✓';
+    btn.style.background = '#1A7A4A';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+  });
+}
+function sharePayLink() {
+  if (!currentAddress) return;
+  const url = buildPayLink(currentAddress);
+  if (navigator.share && navigator.canShare?.({ url })) {
+    navigator.share({ title:'Send me USDC on ArcFlow', url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => alert('Link copied to clipboard:\n' + url));
+  }
 }
 </script>
 </body>

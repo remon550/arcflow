@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcFlow — Get Your Payment Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root {
+  --cream: #FDF6EC;
+  --peach: #FCDFD0;
+  --mint: #D7ECE2;
+  --lilac: #E5E2FB;
+  --coral: #F47A5B;
+  --coral-dk: #E25A3C;
+  --coral-soft: #FFD9CC;
+  --ink: #0E2D5B;
+  --ink-2: #2E4974;
+  --ink-3: #6B7E9E;
+  --ink-4: #94A4BD;
+  --line: #E4DACB;
+  --line-2: rgba(14,45,91,0.10);
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --shadow-soft: 0 18px 50px -22px rgba(14,45,91,0.18);
+  --shadow-soft-2: 0 30px 70px -30px rgba(14,45,91,0.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ——— TOPBAR ——— */
+.topbar {
+  background: rgba(253,246,236,0.94);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-dot { width:9px; height:9px; border-radius:50%; background:var(--coral); display:inline-block; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.network-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mint);
+  color: #1A7A4A;
+  border-radius: var(--r-pill);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.network-badge .ndot { width:7px;height:7px;background:#22C55E;border-radius:50%;animation:ndot-pulse 2s infinite; }
+@keyframes ndot-pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.network-badge.wrong { background:var(--peach);color:var(--coral-dk); }
+.network-badge.wrong .ndot { background:var(--coral); }
+
+.wallet-chip-wrap { position:relative; }
+.wallet-chip {
+  display:inline-flex;align-items:center;gap:8px;
+  background:#fff;border:1.5px solid var(--line);border-radius:var(--r-pill);
+  padding:6px 14px 6px 8px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--ink-2);
+  cursor:pointer;transition:border-color 0.2s,background 0.2s;user-select:none;
+}
+.wallet-chip:hover { border-color:var(--ink-3);background:var(--cream); }
+.wallet-chip.open { border-color:var(--coral);background:var(--cream); }
+.wallet-avatar { width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--coral),var(--lilac));flex-shrink:0; }
+.wallet-chevron { font-size:10px;color:var(--ink-4);margin-left:2px;transition:transform 0.2s;flex-shrink:0; }
+.wallet-chip.open .wallet-chevron { transform:rotate(180deg); }
+.wallet-dropdown {
+  display:none;position:absolute;top:calc(100% + 8px);right:0;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--shadow-soft-2);min-width:200px;overflow:hidden;z-index:100;
+  animation:dropIn 0.15s ease;
+}
+.wallet-dropdown.open { display:block; }
+@keyframes dropIn { from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)} }
+.dropdown-header { padding:12px 14px 8px;border-bottom:1px solid var(--line-2); }
+.dropdown-header .dh-label { font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);margin-bottom:3px; }
+.dropdown-header .dh-addr { font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);font-weight:500;word-break:break-all; }
+.dropdown-item {
+  display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:700;
+  color:var(--ink-2);cursor:pointer;transition:background 0.12s;border:none;background:transparent;
+  width:100%;text-align:left;font-family:'Nunito',sans-serif;text-decoration:none;
+}
+.dropdown-item:hover { background:var(--cream); }
+.di-icon { width:28px;height:28px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0; }
+.di-icon.copy { background:var(--lilac); }
+.di-icon.scan { background:var(--mint); }
+.di-icon.logout { background:var(--peach); }
+.dropdown-divider { height:1px;background:var(--line-2);margin:4px 0; }
+.dropdown-item.logout-item { color:var(--coral-dk); }
+
+/* ——— PAGE ——— */
+.page {
+  flex:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:48px 24px 80px;
+}
+.container { width:100%;max-width:540px; }
+
+/* ——— CONNECT GATE ——— */
+.connect-gate {
+  background:#fff;
+  border-radius:var(--r-lg);
+  border:1px solid var(--line-2);
+  box-shadow:var(--shadow-soft-2);
+  padding:56px 40px;
+  text-align:center;
+  animation:fadeUp 0.4s ease;
+}
+.gate-emoji { font-size:56px;margin-bottom:20px; }
+.connect-gate h2 {
+  font-family:'Fraunces',serif;font-size:28px;font-weight:800;
+  color:var(--ink);margin-bottom:12px;
+}
+.connect-gate p { font-size:15px;color:var(--ink-3);font-weight:500;margin-bottom:28px;line-height:1.6;max-width:380px;margin-left:auto;margin-right:auto; }
+.btn-connect-big {
+  background:var(--coral);color:#fff;border:none;border-radius:var(--r-pill);
+  padding:16px 36px;font-family:'Nunito',sans-serif;font-size:17px;font-weight:800;
+  cursor:pointer;box-shadow:0 8px 28px -8px rgba(244,122,91,0.5);
+  transition:background 0.2s,transform 0.15s;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.btn-connect-big:hover { background:var(--coral-dk);transform:translateY(-2px); }
+
+/* ——— CARD ——— */
+.card {
+  background:#fff;border-radius:var(--r-lg);
+  border:1px solid var(--line-2);box-shadow:var(--shadow-soft-2);
+  overflow:hidden;animation:fadeUp 0.4s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+.card-body { padding:36px; }
+
+.section-tag {
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--peach);color:var(--coral-dk);border-radius:var(--r-pill);
+  padding:5px 14px;font-size:11px;font-weight:800;letter-spacing:0.08em;
+  text-transform:uppercase;margin-bottom:12px;
+}
+.card-title {
+  font-family:'Fraunces',serif;font-size:28px;font-weight:800;
+  color:var(--ink);letter-spacing:-0.02em;margin-bottom:8px;line-height:1.15;
+}
+.card-sub { font-size:15px;color:var(--ink-3);font-weight:500;line-height:1.6;margin-bottom:28px; }
+
+/* ——— WALLET STRIP ——— */
+.wallet-strip {
+  display:flex;align-items:center;gap:12px;
+  background:var(--cream);border-radius:var(--r-md);
+  padding:14px 16px;margin-bottom:24px;
+  border:1px solid var(--line-2);
+}
+.ws-avatar { width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--coral),var(--lilac));flex-shrink:0; }
+.ws-info .ws-label { font-size:10px;font-weight:800;color:var(--ink-4);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px; }
+.ws-info .ws-addr { font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);font-weight:500; }
+
+/* ——— FORM ——— */
+.form-group { margin-bottom:18px; }
+.form-label {
+  font-size:11px;font-weight:800;color:var(--ink-3);
+  margin-bottom:7px;display:block;letter-spacing:0.05em;text-transform:uppercase;
+}
+.form-label-opt { font-weight:600;color:var(--ink-4);text-transform:none;letter-spacing:0;font-size:11px; }
+.form-input {
+  width:100%;background:var(--cream);border:1.5px solid var(--line);
+  border-radius:var(--r-sm);padding:12px 16px;
+  font-family:'Nunito',sans-serif;font-size:15px;color:var(--ink);
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+.form-input:focus { border-color:var(--coral);box-shadow:0 0 0 3px rgba(244,122,91,0.12); }
+.form-input::placeholder { color:var(--ink-4);font-size:14px; }
+.amount-wrap { position:relative; }
+.amount-suffix {
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-size:13px;font-weight:800;color:var(--ink-3);pointer-events:none;
+}
+.form-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.form-input[type=number] { -moz-appearance:textfield;padding-right:72px; }
+
+/* ——— DIVIDER ——— */
+.divider { height:1px;background:var(--line-2);margin:24px 0; }
+
+/* ——— LINK BOX ——— */
+.link-label { font-size:11px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px; }
+.link-box {
+  background:var(--cream);border:2px solid var(--line);
+  border-radius:var(--r-md);padding:16px 18px;margin-bottom:14px;
+  min-height:58px;display:flex;align-items:center;
+  transition:border-color 0.2s;cursor:text;
+}
+.link-url {
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  color:var(--ink-2);font-weight:500;word-break:break-all;line-height:1.5;
+}
+
+/* ——— BUTTONS ——— */
+.link-actions { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px; }
+.btn-copy {
+  background:var(--coral);color:#fff;border:none;border-radius:var(--r-pill);
+  padding:13px 20px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
+  cursor:pointer;transition:background 0.2s,transform 0.15s;
+  box-shadow:0 6px 20px -8px rgba(244,122,91,0.45);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-copy:hover { background:var(--coral-dk);transform:translateY(-1px); }
+.btn-copy.copied { background:#1A7A4A;transform:none; }
+.btn-share {
+  background:transparent;color:var(--ink-2);border:1.5px solid var(--line);
+  border-radius:var(--r-pill);padding:13px 20px;
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
+  cursor:pointer;transition:border-color 0.2s,background 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-share:hover { border-color:var(--ink-2);background:rgba(14,45,91,0.04); }
+
+.link-hint { font-size:13px;color:var(--ink-4);font-weight:600;line-height:1.6;text-align:center; }
+
+/* ——— MODALS ——— */
+.modal-overlay {
+  display:none;position:fixed;inset:0;
+  background:rgba(14,45,91,0.5);backdrop-filter:blur(4px);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:#fff;border-radius:var(--r-lg);padding:40px;
+  max-width:420px;width:100%;box-shadow:var(--shadow-soft-2);
+  text-align:center;animation:modalIn 0.25s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)} }
+.modal-icon { font-size:48px;margin-bottom:16px; }
+.modal-title { font-family:'Fraunces',serif;font-size:24px;font-weight:800;color:var(--ink);margin-bottom:10px; }
+.modal-body { font-size:15px;color:var(--ink-3);font-weight:500;line-height:1.6;margin-bottom:24px; }
+.modal-chain { background:var(--cream);border-radius:var(--r-md);padding:16px;margin-bottom:24px;text-align:left; }
+.modal-chain-row { display:flex;justify-content:space-between;font-size:13px;padding:5px 0; }
+.modal-chain-row .k { color:var(--ink-3);font-weight:600; }
+.modal-chain-row .v { font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);font-weight:500; }
+.btn-switch {
+  width:100%;background:var(--coral);color:#fff;border:none;border-radius:var(--r-pill);
+  padding:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;
+  cursor:pointer;transition:background 0.2s;margin-bottom:10px;
+}
+.btn-switch:hover { background:var(--coral-dk); }
+.btn-disconnect {
+  background:transparent;color:var(--ink-3);border:none;
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+}
+
+/* ——— QR MODAL ——— */
+.qr-modal { max-width:360px; }
+.qr-wrap {
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;border:2px solid var(--line);border-radius:var(--r-md);
+  padding:16px;width:fit-content;margin:0 auto 20px;
+}
+#qrCode canvas, #qrCode img { display:block;border-radius:4px; }
+.qr-subtitle { font-size:14px;color:var(--ink-3);font-weight:600;margin-bottom:20px; }
+.qr-actions { display:flex;flex-direction:column;gap:10px; }
+.btn-primary {
+  width:100%;background:var(--coral);color:#fff;border:none;
+  border-radius:var(--r-pill);padding:14px;
+  font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;transition:background 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-primary:hover { background:var(--coral-dk); }
+.btn-secondary {
+  width:100%;background:transparent;color:var(--ink-2);
+  border:1.5px solid var(--line);border-radius:var(--r-pill);padding:13px;
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:border-color 0.2s;
+}
+.btn-secondary:hover { border-color:var(--ink-2); }
+
+@media (max-width:600px) {
+  .card-body { padding:24px; }
+  .connect-gate { padding:40px 24px; }
+  .topbar { padding:0 20px; }
+  .link-url { font-size:11px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a href="/" class="nav-logo"><span class="logo-dot"></span>ArcFlow</a>
+  <div class="topbar-right">
+    <div class="network-badge" id="networkBadge">
+      <span class="ndot"></span>Arc Testnet
+    </div>
+    <div class="wallet-chip-wrap" id="walletChipWrap" style="display:none">
+      <div class="wallet-chip" id="walletChip" onclick="toggleDropdown()">
+        <div class="wallet-avatar"></div>
+        <span id="walletChipAddr">—</span>
+        <span class="wallet-chevron">▾</span>
+      </div>
+      <div class="wallet-dropdown" id="walletDropdown">
+        <div class="dropdown-header">
+          <div class="dh-label">Connected wallet</div>
+          <div class="dh-addr" id="dropdownAddr">—</div>
+        </div>
+        <button class="dropdown-item" onclick="copyAddress()">
+          <span class="di-icon copy">⎘</span> Copy Address
+        </button>
+        <a class="dropdown-item" id="dropdownScanLink" href="#" target="_blank">
+          <span class="di-icon scan">↗</span> View on ArcScan
+        </a>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item logout-item" onclick="disconnectWallet()">
+          <span class="di-icon logout">⏏</span> Disconnect
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- PAGE -->
+<div class="page">
+  <div class="container">
+
+    <!-- CONNECT GATE -->
+    <div id="connectGate" class="connect-gate">
+      <div class="gate-emoji">🔗</div>
+      <h2>Connect to get your link</h2>
+      <p>Connect your MetaMask wallet to generate a shareable payment link — so anyone can send you USDC without needing your wallet address.</p>
+      <button class="btn-connect-big" onclick="connectWallet()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+        Connect MetaMask
+      </button>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div id="mainCard" class="card" style="display:none">
+      <div class="card-body">
+        <div class="section-tag">Payment Link</div>
+        <h1 class="card-title">Your payment link</h1>
+        <p class="card-sub">Share this link so anyone can send you USDC — no wallet address memorized on their end.</p>
+
+        <div class="wallet-strip">
+          <div class="ws-avatar"></div>
+          <div class="ws-info">
+            <div class="ws-label">Receiving wallet</div>
+            <div class="ws-addr" id="wsAddr">—</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="labelInput">Label <span class="form-label-opt">(optional)</span></label>
+          <input class="form-input" id="labelInput" type="text" placeholder="e.g. Monthly support from Dubai" maxlength="80">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="amountInput">Request amount <span class="form-label-opt">(optional)</span></label>
+          <div class="amount-wrap">
+            <input class="form-input" id="amountInput" type="number" placeholder="0.00" step="0.01" min="0">
+            <span class="amount-suffix">USDC</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="noteInput">Note <span class="form-label-opt">(optional)</span></label>
+          <input class="form-input" id="noteInput" type="text" placeholder="e.g. For rent and groceries" maxlength="120">
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="link-label">Your payment link</div>
+        <div class="link-box" onclick="copyLink()">
+          <div class="link-url" id="generatedLink">—</div>
+        </div>
+        <div class="link-actions">
+          <button class="btn-copy" id="copyBtn" onclick="copyLink()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            COPY LINK
+          </button>
+          <button class="btn-share" onclick="shareLink()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            SHARE / QR
+          </button>
+        </div>
+        <p class="link-hint">Share this link with anyone. They send USDC directly to your wallet on Arc testnet. No signup needed on their end.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- WRONG NETWORK MODAL -->
+<div class="modal-overlay" id="wrongNetModal">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">Wrong Network</div>
+    <p class="modal-body">ArcFlow only works on Arc Testnet. Please switch your wallet to continue.</p>
+    <div class="modal-chain">
+      <div class="modal-chain-row"><span class="k">Network</span><span class="v">Arc Testnet</span></div>
+      <div class="modal-chain-row"><span class="k">Chain ID</span><span class="v">5042002</span></div>
+      <div class="modal-chain-row"><span class="k">RPC</span><span class="v">rpc.testnet.arc.network</span></div>
+      <div class="modal-chain-row"><span class="k">Currency</span><span class="v">USDC (18 dec)</span></div>
+    </div>
+    <button class="btn-switch" onclick="switchToArc()">Switch to Arc Testnet</button>
+    <button class="btn-disconnect" onclick="disconnectWallet()">Disconnect Wallet</button>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal qr-modal">
+    <div class="modal-title">Scan to pay me</div>
+    <p class="qr-subtitle">Scan to send me USDC on Arc</p>
+    <div class="qr-wrap">
+      <div id="qrCode"></div>
+    </div>
+    <div class="qr-actions">
+      <button class="btn-primary" onclick="downloadQR()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        DOWNLOAD QR
+      </button>
+      <button class="btn-secondary" onclick="closeQRModal()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ARC_CHAIN_ID     = 5042002;
+const ARC_CHAIN_ID_HEX = '0x4CEF52';
+const ARC_RPC_URL      = 'https://rpc.testnet.arc.network';
+const ARC_CHAIN_NAME   = 'Arc Testnet';
+const ARC_CURRENCY     = { name:'USDC', symbol:'USDC', decimals:18 };
+const ARC_EXPLORER     = 'https://testnet.arcscan.app';
+const STORAGE_KEY      = 'arcflow_wallet';
+const BASE_URL         = 'https://arcflow.live';
+
+let currentAddress = null;
+
+// ——— Init ———
+window.addEventListener('load', async () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    currentAddress = saved;
+    showMainCard();
+    await checkNetwork();
+  } else {
+    document.getElementById('connectGate').style.display = 'block';
+  }
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', accs => {
+      if (!accs.length) disconnectWallet();
+      else { currentAddress = accs[0]; localStorage.setItem(STORAGE_KEY, currentAddress); updateWalletUI(); updateLink(); }
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  }
+  ['labelInput','amountInput','noteInput'].forEach(id =>
+    document.getElementById(id)?.addEventListener('input', updateLink));
+});
+
+function showMainCard() {
+  document.getElementById('connectGate').style.display = 'none';
+  document.getElementById('mainCard').style.display = 'block';
+  document.getElementById('walletChipWrap').style.display = 'block';
+  updateWalletUI();
+  updateLink();
+}
+
+function updateWalletUI() {
+  if (!currentAddress) return;
+  document.getElementById('walletChipAddr').textContent = currentAddress.slice(0,6) + '…' + currentAddress.slice(-4);
+  document.getElementById('wsAddr').textContent = currentAddress.slice(0,10) + '…' + currentAddress.slice(-8);
+  document.getElementById('dropdownAddr').textContent = currentAddress.slice(0,10) + '…' + currentAddress.slice(-10);
+  document.getElementById('dropdownScanLink').href = ARC_EXPLORER + '/address/' + currentAddress;
+}
+
+function updateLink() {
+  if (!currentAddress) return;
+  const label  = document.getElementById('labelInput').value.trim();
+  const amount = document.getElementById('amountInput').value.trim();
+  const note   = document.getElementById('noteInput').value.trim();
+  let url = `${BASE_URL}/pay?to=${currentAddress}`;
+  if (amount && parseFloat(amount) > 0) url += `&amount=${encodeURIComponent(amount)}`;
+  if (label)  url += `&label=${encodeURIComponent(label)}`;
+  if (note)   url += `&note=${encodeURIComponent(note)}`;
+  document.getElementById('generatedLink').textContent = url;
+}
+
+function copyLink() {
+  const url = document.getElementById('generatedLink').textContent;
+  if (!url || url === '—') return;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function shareLink() {
+  const url = document.getElementById('generatedLink').textContent;
+  if (!url || url === '—') return;
+  const label = document.getElementById('labelInput').value.trim();
+  const shareData = {
+    title: 'Send me USDC on ArcFlow',
+    text:  label ? `${label} — Pay me USDC via ArcFlow` : 'Pay me USDC via ArcFlow',
+    url,
+  };
+  if (navigator.share && navigator.canShare?.(shareData)) {
+    navigator.share(shareData).catch(() => showQRModal(url));
+  } else {
+    showQRModal(url);
+  }
+}
+
+function showQRModal(url) {
+  document.getElementById('qrModal').classList.add('open');
+  const qrEl = document.getElementById('qrCode');
+  qrEl.innerHTML = '';
+  new QRCode(qrEl, {
+    text: url, width: 220, height: 220,
+    colorDark: '#0E2D5B', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+}
+function closeQRModal() { document.getElementById('qrModal').classList.remove('open'); }
+
+function downloadQR() {
+  const canvas = document.querySelector('#qrCode canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'arcflow-payment-qr.png';
+  a.click();
+}
+
+// ——— Dropdown ———
+function toggleDropdown() {
+  const chip = document.getElementById('walletChip');
+  const dd   = document.getElementById('walletDropdown');
+  const open = dd.classList.contains('open');
+  chip.classList.toggle('open', !open);
+  dd.classList.toggle('open', !open);
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('walletChipWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('walletChip')?.classList.remove('open');
+    document.getElementById('walletDropdown')?.classList.remove('open');
+  }
+});
+function copyAddress() {
+  if (!currentAddress) return;
+  navigator.clipboard.writeText(currentAddress);
+  document.getElementById('walletChip').classList.remove('open');
+  document.getElementById('walletDropdown').classList.remove('open');
+}
+
+// ——— Network ———
+async function checkNetwork() {
+  if (!window.ethereum) return;
+  try {
+    const chainId = await window.ethereum.request({ method:'eth_chainId' });
+    if (parseInt(chainId, 16) !== ARC_CHAIN_ID) showWrongNetModal();
+  } catch(e) {}
+}
+function showWrongNetModal() {
+  document.getElementById('networkBadge').className = 'network-badge wrong';
+  document.getElementById('networkBadge').innerHTML = '<span class="ndot"></span> Wrong Network';
+  document.getElementById('wrongNetModal').classList.add('open');
+}
+async function switchToArc() {
+  if (!window.ethereum) return;
+  const btn = document.querySelector('.btn-switch');
+  if (btn) { btn.disabled = true; btn.textContent = 'Waiting for MetaMask…'; }
+  try {
+    await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId:ARC_CHAIN_ID_HEX }] });
+    document.getElementById('wrongNetModal').classList.remove('open');
+    window.location.reload();
+  } catch(switchErr) {
+    if (switchErr.code === 4001) { if (btn) { btn.disabled = false; btn.textContent = 'Switch to Arc Testnet'; } return; }
+    try {
+      await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId:ARC_CHAIN_ID_HEX, chainName:ARC_CHAIN_NAME, nativeCurrency:ARC_CURRENCY, rpcUrls:[ARC_RPC_URL], blockExplorerUrls:[ARC_EXPLORER] }] });
+      document.getElementById('wrongNetModal').classList.remove('open');
+      window.location.reload();
+    } catch(addErr) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Switch to Arc Testnet'; }
+    }
+  }
+}
+
+// ——— Connect / Disconnect ———
+async function connectWallet() {
+  if (!window.ethereum) { alert('MetaMask not found.\n\nInstall MetaMask from metamask.io and reload.'); return; }
+  try {
+    const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
+    if (!accounts.length) return;
+    currentAddress = accounts[0];
+    localStorage.setItem(STORAGE_KEY, currentAddress);
+    showMainCard();
+    await checkNetwork();
+  } catch(err) {
+    if (err.code !== 4001) alert('Connection failed: ' + err.message);
+  }
+}
+function disconnectWallet() {
+  document.getElementById('wrongNetModal').classList.remove('open');
+  localStorage.removeItem(STORAGE_KEY);
+  window.location.replace('/');
+}
+</script>
+</body>
+</html>

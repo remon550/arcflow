@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Send USDC via ArcFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800&family=JetBrains+Mono:wght@400;500&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+:root {
+  --cream: #FDF6EC;
+  --peach: #FCDFD0;
+  --mint: #D7ECE2;
+  --lilac: #E5E2FB;
+  --coral: #F47A5B;
+  --coral-dk: #E25A3C;
+  --coral-soft: #FFD9CC;
+  --ink: #0E2D5B;
+  --ink-2: #2E4974;
+  --ink-3: #6B7E9E;
+  --ink-4: #94A4BD;
+  --line: #E4DACB;
+  --line-2: rgba(14,45,91,0.10);
+  --r-sm: 10px;
+  --r-md: 18px;
+  --r-lg: 28px;
+  --r-pill: 999px;
+  --shadow-soft: 0 18px 50px -22px rgba(14,45,91,0.18);
+  --shadow-soft-2: 0 30px 70px -30px rgba(14,45,91,0.25);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+}
+
+/* ——— TOP LOGO ——— */
+.pay-logo {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.nav-logo {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.logo-dot { width:8px;height:8px;border-radius:50%;background:var(--coral);display:inline-block; }
+.network-badge {
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--mint);color:#1A7A4A;
+  border-radius:var(--r-pill);padding:4px 11px;
+  font-size:11px;font-weight:800;
+}
+.ndot { width:6px;height:6px;background:#22C55E;border-radius:50%;animation:npulse 2s infinite; }
+@keyframes npulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ——— CARD ——— */
+.pay-card {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow-soft-2);
+  overflow: hidden;
+  animation: fadeUp 0.4s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+
+/* ——— CARD HEADER ——— */
+.pay-header {
+  padding: 32px 32px 24px;
+  border-bottom: 1px solid var(--line-2);
+}
+.arc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--mint);
+  color: #1A7A4A;
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+.arc-badge .adot { width:6px;height:6px;background:#22C55E;border-radius:50%; }
+.pay-to-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+.pay-to-addr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: var(--cream);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+.pay-label-display {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.pay-note-display {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* ——— CARD BODY ——— */
+.pay-body { padding: 28px 32px; }
+
+/* Amount section */
+.amount-section { margin-bottom: 20px; }
+.amount-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.amount-locked {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.amount-locked .locked-num {
+  font-family: 'Fraunces', serif;
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.amount-locked .locked-unit {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink-3);
+  padding: 4px 12px;
+  background: var(--peach);
+  border-radius: var(--r-pill);
+}
+.amount-input-wrap { position: relative; }
+.amount-input {
+  width: 100%;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 14px 72px 14px 16px;
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.amount-input:focus { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(244,122,91,0.12); }
+.amount-input::placeholder { color: var(--ink-4); font-size: 18px; font-family: 'Nunito', sans-serif; }
+.amount-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.amount-input[type=number] { -moz-appearance: textfield; }
+.amount-unit-badge {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-3);
+  padding: 3px 10px;
+  background: var(--peach);
+  border-radius: var(--r-pill);
+  pointer-events: none;
+}
+
+/* Fee preview */
+.fee-card {
+  background: var(--cream);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+}
+.fee-row:not(:last-child) { border-bottom: 1px solid var(--line-2); padding-bottom: 9px; margin-bottom: 4px; }
+.fee-key { font-weight: 600; color: var(--ink-3); }
+.fee-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.fee-val.total { color: var(--ink); font-weight: 700; font-size: 13px; }
+.fee-val.green { color: #1A7A4A; font-weight: 700; }
+
+/* Send button */
+.send-btn {
+  width: 100%;
+  background: var(--coral);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 8px 28px -8px rgba(244,122,91,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.send-btn:hover:not(:disabled) { background: var(--coral-dk); transform: translateY(-1px); box-shadow: 0 12px 32px -8px rgba(244,122,91,0.6); }
+.send-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to{ transform: rotate(360deg); } }
+
+.form-error {
+  font-size: 12px; font-weight: 700; color: #E53E3E;
+  margin-top: 8px; display: none;
+}
+.form-error.show { display: block; }
+
+/* ——— FOOTER ——— */
+.pay-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-4);
+  font-weight: 600;
+}
+.pay-footer a {
+  color: var(--coral);
+  text-decoration: none;
+  font-weight: 700;
+}
+.pay-footer a:hover { text-decoration: underline; }
+
+/* ——— SENDING OVERLAY ——— */
+.sending-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(14,45,91,0.4);
+  backdrop-filter: blur(6px);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+.sending-overlay.show { display: flex; }
+.sending-box {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 340px;
+  box-shadow: var(--shadow-soft-2);
+}
+.big-spinner {
+  width: 56px; height: 56px;
+  border: 4px solid var(--line);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: spin 0.9s linear infinite;
+}
+.sending-title { font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--ink);margin-bottom:8px; }
+.sending-sub { font-size:14px;color:var(--ink-3);font-weight:600; }
+
+/* ——— INVALID PARAM STATE ——— */
+.error-state {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-soft-2);
+  padding: 48px 32px;
+  text-align: center;
+  animation: fadeUp 0.4s ease;
+}
+.error-state h2 { font-family:'Fraunces',serif;font-size:26px;font-weight:800;color:var(--ink);margin-bottom:12px; }
+.error-state p { font-size:15px;color:var(--ink-3);font-weight:500;margin-bottom:24px; }
+.btn-home {
+  background: var(--coral); color:#fff; border:none; border-radius:var(--r-pill);
+  padding:14px 32px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;
+  cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+  transition:background 0.2s;
+}
+.btn-home:hover { background:var(--coral-dk); }
+
+@media (max-width:520px) {
+  body { padding:24px 16px 48px; }
+  .pay-header,.pay-body { padding-left:24px;padding-right:24px; }
+  .amount-locked .locked-num { font-size:32px; }
+  .amount-input { font-size:22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP LOGO BAR -->
+<div class="pay-logo">
+  <a href="/" class="nav-logo"><span class="logo-dot"></span>ArcFlow</a>
+  <div class="network-badge"><span class="ndot"></span>Arc Testnet</div>
+</div>
+
+<!-- INVALID STATE (shown if no `to` param) -->
+<div class="error-state" id="errorState" style="display:none">
+  <div style="font-size:48px;margin-bottom:16px">❌</div>
+  <h2>Invalid payment link</h2>
+  <p>This link is missing a recipient address. Ask the sender to share a valid ArcFlow payment link.</p>
+  <a href="/" class="btn-home">← Back to ArcFlow</a>
+</div>
+
+<!-- PAY CARD -->
+<div class="pay-card" id="payCard" style="display:none">
+
+  <!-- Header: recipient info -->
+  <div class="pay-header">
+    <div class="arc-badge"><span class="adot"></span>Sending on Arc Testnet</div>
+    <div class="pay-to-label">You're sending USDC to</div>
+    <div class="pay-to-addr" id="recipientAddrDisplay">—</div>
+    <div class="pay-label-display" id="labelDisplay" style="display:none"></div>
+    <div class="pay-note-display" id="noteDisplay" style="display:none"></div>
+  </div>
+
+  <!-- Body: amount + fee + send -->
+  <div class="pay-body">
+
+    <!-- Amount -->
+    <div class="amount-section">
+      <div class="amount-label">Amount</div>
+
+      <!-- Locked (pre-filled) -->
+      <div class="amount-locked" id="amountLocked" style="display:none">
+        <span class="locked-num" id="lockedNum">—</span>
+        <span class="locked-unit">USDC</span>
+      </div>
+
+      <!-- Editable (no pre-fill) -->
+      <div class="amount-input-wrap" id="amountEditable" style="display:none">
+        <input class="amount-input" id="amountInput" type="number"
+               placeholder="0.00" step="0.000001" min="0">
+        <span class="amount-unit-badge">USDC</span>
+      </div>
+      <div class="form-error" id="amountError">Please enter a valid amount</div>
+    </div>
+
+    <!-- Fee preview -->
+    <div class="fee-card">
+      <div class="fee-row">
+        <span class="fee-key">Network fee</span>
+        <span class="fee-val">~$0.01 USDC</span>
+      </div>
+      <div class="fee-row">
+        <span class="fee-key">Total cost</span>
+        <span class="fee-val total" id="feeTotal">—</span>
+      </div>
+      <div class="fee-row">
+        <span class="fee-key">Recipient gets</span>
+        <span class="fee-val green" id="feeRecipient">—</span>
+      </div>
+    </div>
+
+    <!-- Send / Connect button -->
+    <button class="send-btn" id="sendBtn" onclick="handleSend()">
+      Connect Wallet to Send
+    </button>
+    <p style="font-size:12px;color:var(--ink-4);text-align:center;margin-top:12px;font-weight:600">
+      Gas is paid in USDC · Arc Testnet only
+    </p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="pay-footer" id="payFooter" style="display:none">
+  Powered by <a href="/">Arcflow</a> · Built on Arc testnet
+</div>
+
+<!-- SENDING OVERLAY -->
+<div class="sending-overlay" id="sendingOverlay">
+  <div class="sending-box">
+    <div class="big-spinner"></div>
+    <div class="sending-title">Sending USDC…</div>
+    <p class="sending-sub">Waiting for MetaMask confirmation</p>
+  </div>
+</div>
+
+<script>
+const ARC_CHAIN_ID     = 5042002;
+const ARC_CHAIN_ID_HEX = '0x4CEF52';
+const ARC_RPC_URL      = 'https://rpc.testnet.arc.network';
+const ARC_CHAIN_NAME   = 'Arc Testnet';
+const ARC_CURRENCY     = { name:'USDC', symbol:'USDC', decimals:18 };
+const ARC_EXPLORER     = 'https://testnet.arcscan.app';
+const STORAGE_KEY      = 'arcflow_wallet';
+
+// ——— Parse URL params ———
+const params       = new URLSearchParams(window.location.search);
+const toAddr       = (params.get('to') || '').trim();
+const prefillAmt   = (params.get('amount') || '').trim();
+const labelText    = (params.get('label') || '').trim();
+const noteText     = (params.get('note') || '').trim();
+
+let currentAddress = null;
+let isConnected    = false;
+let currentBalance = '0';
+
+// ——— Init ———
+window.addEventListener('load', async () => {
+  // Validate `to` param
+  if (!toAddr || !ethers.isAddress(toAddr)) {
+    document.getElementById('errorState').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('payCard').style.display = 'block';
+  document.getElementById('payFooter').style.display = 'block';
+  populateRecipient();
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    currentAddress = saved;
+    isConnected = true;
+    await loadBalance();
+    updateSendBtn();
+  } else {
+    updateSendBtn();
+  }
+
+  if (!prefillAmt) {
+    document.getElementById('amountInput')?.addEventListener('input', () => {
+      updateFeePreview();
+      updateSendBtn();
+    });
+  }
+
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', accs => {
+      if (!accs.length) { currentAddress = null; isConnected = false; updateSendBtn(); }
+      else { currentAddress = accs[0]; localStorage.setItem(STORAGE_KEY, currentAddress); isConnected = true; loadBalance(); updateSendBtn(); }
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  }
+});
+
+function populateRecipient() {
+  document.getElementById('recipientAddrDisplay').textContent =
+    toAddr.slice(0,8) + '…' + toAddr.slice(-6);
+
+  if (labelText) {
+    const el = document.getElementById('labelDisplay');
+    el.textContent = labelText;
+    el.style.display = 'block';
+  }
+  if (noteText) {
+    const el = document.getElementById('noteDisplay');
+    el.textContent = noteText;
+    el.style.display = 'block';
+  }
+
+  if (prefillAmt && parseFloat(prefillAmt) > 0) {
+    document.getElementById('lockedNum').textContent =
+      parseFloat(prefillAmt).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:6 });
+    document.getElementById('amountLocked').style.display = 'flex';
+    updateFeePreview(parseFloat(prefillAmt));
+  } else {
+    document.getElementById('amountEditable').style.display = 'block';
+    updateFeePreview(0);
+  }
+}
+
+function getAmount() {
+  if (prefillAmt && parseFloat(prefillAmt) > 0) return parseFloat(prefillAmt);
+  return parseFloat(document.getElementById('amountInput')?.value || '0') || 0;
+}
+
+function updateFeePreview(amt) {
+  const amount = amt !== undefined ? amt : getAmount();
+  const fee = 0.01;
+  const total = amount + fee;
+  const gets = Math.max(0, amount - fee);
+  document.getElementById('feeTotal').textContent     = amount > 0 ? `$${total.toFixed(2)} USDC` : '—';
+  document.getElementById('feeRecipient').textContent = amount > 0 ? `$${gets.toFixed(2)} USDC`  : '—';
+}
+
+function updateSendBtn() {
+  const btn = document.getElementById('sendBtn');
+  if (!isConnected) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> Connect Wallet to Send`;
+    return;
+  }
+  const amount = getAmount();
+  const balance = parseFloat(currentBalance);
+  if (!prefillAmt) {
+    const valid = amount > 0 && amount <= balance;
+    btn.disabled = !valid;
+  } else {
+    btn.disabled = parseFloat(prefillAmt) > balance;
+  }
+  const displayAmt = amount > 0
+    ? amount.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:6 })
+    : '—';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> SEND ${displayAmt} USDC →`;
+}
+
+async function loadBalance() {
+  if (!currentAddress) return;
+  try {
+    const rpc = new ethers.JsonRpcProvider(ARC_RPC_URL);
+    const raw = await rpc.getBalance(currentAddress);
+    currentBalance = ethers.formatUnits(raw, 18);
+    updateSendBtn();
+  } catch(e) {}
+}
+
+// ——— Handle Send / Connect ———
+async function handleSend() {
+  if (!isConnected) {
+    await connectWallet();
+    return;
+  }
+  await sendUSDC();
+}
+
+async function connectWallet() {
+  if (!window.ethereum) { alert('MetaMask not found.\n\nInstall MetaMask from metamask.io and reload.'); return; }
+  try {
+    const accounts = await window.ethereum.request({ method:'eth_requestAccounts' });
+    if (!accounts.length) return;
+    currentAddress = accounts[0];
+    localStorage.setItem(STORAGE_KEY, currentAddress);
+    isConnected = true;
+    await ensureArcNetwork();
+    await loadBalance();
+    updateSendBtn();
+  } catch(err) {
+    if (err.code !== 4001) alert('Connection failed: ' + err.message);
+  }
+}
+
+async function ensureArcNetwork() {
+  if (!window.ethereum) return;
+  try {
+    const chainId = await window.ethereum.request({ method:'eth_chainId' });
+    if (parseInt(chainId, 16) !== ARC_CHAIN_ID) {
+      try {
+        await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId:ARC_CHAIN_ID_HEX }] });
+      } catch {
+        await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId:ARC_CHAIN_ID_HEX, chainName:ARC_CHAIN_NAME, nativeCurrency:ARC_CURRENCY, rpcUrls:[ARC_RPC_URL], blockExplorerUrls:[ARC_EXPLORER] }] });
+      }
+    }
+  } catch(e) {}
+}
+
+async function sendUSDC() {
+  const amount = getAmount();
+  const balance = parseFloat(currentBalance);
+
+  // Validate
+  if (!amount || amount <= 0) {
+    const errEl = document.getElementById('amountError');
+    errEl.classList.add('show');
+    return;
+  }
+  if (amount > balance) {
+    const errEl = document.getElementById('amountError');
+    errEl.textContent = `Insufficient balance (you have ${parseFloat(balance).toFixed(4)} USDC)`;
+    errEl.classList.add('show');
+    return;
+  }
+  document.getElementById('amountError').classList.remove('show');
+
+  document.getElementById('sendingOverlay').classList.add('show');
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    if (!window.ethereum) throw new Error('MetaMask not found');
+    await ensureArcNetwork();
+    const web3Provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await web3Provider.getSigner();
+    const valueWei = ethers.parseUnits(amount.toString(), 18);
+    const tx = await signer.sendTransaction({ to: toAddr, value: valueWei });
+
+    document.getElementById('sendingOverlay').classList.remove('show');
+    window.location.href = `/tx?hash=${tx.hash}&amount=${encodeURIComponent(amount)}&to=${encodeURIComponent(toAddr)}`;
+  } catch(err) {
+    document.getElementById('sendingOverlay').classList.remove('show');
+    document.getElementById('sendBtn').disabled = false;
+    updateSendBtn();
+    if (err.code !== 4001) alert('Transaction failed:\n' + (err.shortMessage || err.message));
+  }
+}
+</script>
+</body>
+</html>

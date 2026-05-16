@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/tx", "destination": "/tx.html" }
+    { "source": "/tx",        "destination": "/tx.html" },
+    { "source": "/receive",   "destination": "/receive.html" },
+    { "source": "/pay",       "destination": "/pay.html" }
   ]
 }
