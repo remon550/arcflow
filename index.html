@@ -817,6 +817,205 @@ footer {
   .footer-top { grid-template-columns: 1fr; }
   .footer-brand { grid-column: span 1; }
 }
+
+/* ——— SAVINGS CALCULATOR ——— */
+.calc-card {
+  background: #fff;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-soft-2);
+  border: 1px solid var(--line-2);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.calc-card.visible { opacity: 1; transform: translateY(0); }
+.calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.45fr;
+}
+.calc-inputs {
+  padding: 40px;
+  border-right: 1px solid var(--line-2);
+}
+.calc-results { padding: 40px; }
+.calc-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.calc-amount-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--cream);
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 24px;
+  transition: border-color 0.2s;
+}
+.calc-amount-wrap:focus-within { border-color: var(--coral); }
+.calc-amount-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 14px 18px;
+  font-family: 'Fraunces', serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 0;
+  width: 100%;
+}
+.calc-amount-input::-webkit-inner-spin-button,
+.calc-amount-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.calc-amount-input[type=number] { -moz-appearance: textfield; }
+.calc-amount-unit {
+  padding: 0 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.calc-select-wrap { position: relative; margin-bottom: 20px; }
+.calc-select {
+  width: 100%;
+  background: var(--cream);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 13px 40px 13px 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.calc-select:focus { border-color: var(--coral); }
+.calc-select:disabled { opacity: 0.6; cursor: not-allowed; background: #F5EEE4; }
+.calc-select-arrow {
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ink-3);
+  display: flex;
+}
+.calc-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-4);
+  margin-top: -14px;
+  margin-bottom: 24px;
+  padding-left: 2px;
+}
+/* Provider rows */
+.provider-row {
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.provider-row.arcflow-row {
+  border: 2px solid var(--coral);
+  background: linear-gradient(135deg, rgba(255,244,238,0.9) 0%, #fff 100%);
+  animation: arcflow-glow 3s ease-in-out infinite;
+}
+@keyframes arcflow-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,122,91,0.0); }
+  50%       { box-shadow: 0 6px 24px -6px rgba(244,122,91,0.32); }
+}
+.provider-row.gray-row { opacity: 0.72; }
+.provider-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.provider-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.logo-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.logo-badge.arc { background: var(--peach); color: var(--coral-dk); }
+.logo-badge.wu  { background: #FFF3E0; color: #BF4A00; }
+.logo-badge.bnk { background: var(--lilac); color: #4A1D96; }
+.provider-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.p-stat-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 4px;
+}
+.p-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.p-stat-value.green { color: #1A7A4A; }
+.p-stat-value.red   { color: #C0392B; }
+.p-stat-time {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+/* Savings banner */
+.savings-banner {
+  background: var(--coral);
+  color: #fff;
+  text-align: center;
+  padding: 18px 24px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.savings-banner span { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 800; }
+@keyframes banner-pulse {
+  0%   { transform: scaleY(1); }
+  35%  { transform: scaleY(1.06); }
+  65%  { transform: scaleY(0.97); }
+  100% { transform: scaleY(1); }
+}
+.savings-banner.pulse { animation: banner-pulse 0.5s ease; }
+
+@media (max-width: 900px) {
+  .calc-grid { grid-template-columns: 1fr; }
+  .calc-inputs { border-right: none; border-bottom: 1px solid var(--line-2); padding: 28px 24px; }
+  .calc-results { padding: 28px 24px; }
+  .calc-amount-input { font-size: 28px; }
+}
+@media (max-width: 600px) {
+  .calc-amount-input { font-size: 24px; }
+  .provider-stats { grid-template-columns: 1fr 1fr; }
+  .provider-stats > div:last-child { grid-column: span 2; }
+}
 </style>
 </head>
 <body>
@@ -1035,6 +1234,138 @@ footer {
     <div class="stat-item" data-scroll style="transition-delay:0.3s">
       <div class="stat-num" id="stat-saved">—</div>
       <div class="stat-label">ETH Gas Saved vs Mainnet</div>
+    </div>
+  </div>
+</section>
+
+<!-- SAVINGS CALCULATOR -->
+<section class="section" id="see-the-difference">
+  <div style="text-align:center;max-width:640px;margin:0 auto 56px;">
+    <div class="section-tag">The Math</div>
+    <h2 class="section-title">See exactly what you save.</h2>
+    <p class="section-sub" style="margin:0 auto;margin-bottom:0;">Real fees. Real time. Real difference.</p>
+  </div>
+  <div class="calc-card" data-scroll>
+    <div class="calc-grid">
+
+      <!-- Left: Inputs -->
+      <div class="calc-inputs">
+        <div class="calc-label">I want to send</div>
+        <div class="calc-amount-wrap">
+          <input class="calc-amount-input" type="number" id="calcAmount" value="500" min="1" max="1000000">
+          <div class="calc-amount-unit">USD</div>
+        </div>
+
+        <div class="calc-label">From</div>
+        <div class="calc-select-wrap" style="margin-bottom:8px;">
+          <select class="calc-select" disabled>
+            <option>🇦🇪 United Arab Emirates</option>
+          </select>
+          <span class="calc-select-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </span>
+        </div>
+        <div class="calc-hint">Sender location locked to UAE</div>
+
+        <div class="calc-label">To</div>
+        <div class="calc-select-wrap">
+          <select class="calc-select" id="calcCountry">
+            <option value="BD">🇧🇩 Bangladesh</option>
+            <option value="IN">🇮🇳 India</option>
+            <option value="PK">🇵🇰 Pakistan</option>
+            <option value="PH">🇵🇭 Philippines</option>
+            <option value="NP">🇳🇵 Nepal</option>
+            <option value="LK">🇱🇰 Sri Lanka</option>
+            <option value="EG">🇪🇬 Egypt</option>
+            <option value="NG">🇳🇬 Nigeria</option>
+          </select>
+          <span class="calc-select-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: Comparison -->
+      <div class="calc-results">
+        <div class="calc-label" style="margin-bottom:16px;">Live Comparison</div>
+
+        <!-- Arcflow -->
+        <div class="provider-row arcflow-row">
+          <div class="provider-row-top">
+            <div class="provider-name">
+              <span class="logo-badge arc">∩ arcflow</span>
+            </div>
+            <a href="/dashboard" class="btn-primary" style="padding:8px 18px;font-size:12px;letter-spacing:0.04em;">SEND NOW</a>
+          </div>
+          <div class="provider-stats">
+            <div>
+              <div class="p-stat-label">Fee</div>
+              <div class="p-stat-value green" id="arc-fee">~$0.01</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Recipient Gets</div>
+              <div class="p-stat-value" id="arc-gets">$499.99</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Time</div>
+              <div class="p-stat-value p-stat-time">⚡ &lt; 1 sec</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Western Union -->
+        <div class="provider-row gray-row">
+          <div class="provider-row-top">
+            <div class="provider-name">
+              <span class="logo-badge wu">WU</span>
+              Western Union
+            </div>
+          </div>
+          <div class="provider-stats">
+            <div>
+              <div class="p-stat-label">Fee</div>
+              <div class="p-stat-value red" id="wu-fee">$19.49</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Recipient Gets</div>
+              <div class="p-stat-value" id="wu-gets">$480.51</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Time</div>
+              <div class="p-stat-time">1–3 bus. days</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Transfer -->
+        <div class="provider-row gray-row">
+          <div class="provider-row-top">
+            <div class="provider-name">
+              <span class="logo-badge bnk">🏦</span>
+              Bank Transfer
+            </div>
+          </div>
+          <div class="provider-stats">
+            <div>
+              <div class="p-stat-label">Fee</div>
+              <div class="p-stat-value red" id="bank-fee">$32.50</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Recipient Gets</div>
+              <div class="p-stat-value" id="bank-gets">$467.50</div>
+            </div>
+            <div>
+              <div class="p-stat-label">Time</div>
+              <div class="p-stat-time">3–5 bus. days</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- Savings Banner -->
+    <div class="savings-banner" id="savingsBanner">
+      You save <span id="savingsAmount">$19.48</span> and 3 days by using Arcflow
     </div>
   </div>
 </section>
@@ -1352,6 +1683,70 @@ const statsObserverOnce = new IntersectionObserver((entries) => {
 }, { threshold: 0.2 });
 const statsSection = document.getElementById('stats');
 if (statsSection) statsObserverOnce.observe(statsSection);
+
+// ——— Savings Calculator ───────────────────────────────────────────────────
+(function initCalc() {
+  const amountInput = document.getElementById('calcAmount');
+  if (!amountInput) return;
+
+  const els = {
+    arcGets:    document.getElementById('arc-gets'),
+    wuFee:      document.getElementById('wu-fee'),
+    wuGets:     document.getElementById('wu-gets'),
+    bankFee:    document.getElementById('bank-fee'),
+    bankGets:   document.getElementById('bank-gets'),
+    savings:    document.getElementById('savingsAmount'),
+    banner:     document.getElementById('savingsBanner'),
+  };
+
+  let prev = { arcGets: 499.99, wuFee: 19.49, wuGets: 480.51, bankFee: 32.50, bankGets: 467.50, savings: 19.48 };
+  let rafIds = {};
+
+  function animVal(el, key, from, to, prefix) {
+    if (!el) return;
+    if (rafIds[key]) cancelAnimationFrame(rafIds[key]);
+    const t0 = performance.now();
+    const dur = 380;
+    function tick(now) {
+      const p = Math.min((now - t0) / dur, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      const v = from + (to - from) * e;
+      el.textContent = prefix + v.toFixed(2);
+      if (p < 1) rafIds[key] = requestAnimationFrame(tick);
+    }
+    rafIds[key] = requestAnimationFrame(tick);
+  }
+
+  function updateCalc() {
+    const raw = parseFloat(amountInput.value);
+    const amt = (!isNaN(raw) && raw > 0) ? raw : 0;
+
+    const arcGets  = Math.max(0, amt - 0.01);
+    const wuFee    = (amt * 0.029) + 4.99;
+    const wuGets   = Math.max(0, amt - wuFee);
+    const bankFee  = (amt * 0.035) + 15;
+    const bankGets = Math.max(0, amt - bankFee);
+    const savings  = wuFee - 0.01;
+
+    animVal(els.arcGets,  'arcGets',  prev.arcGets,  arcGets,  '$');
+    animVal(els.wuFee,    'wuFee',    prev.wuFee,    wuFee,    '$');
+    animVal(els.wuGets,   'wuGets',   prev.wuGets,   wuGets,   '$');
+    animVal(els.bankFee,  'bankFee',  prev.bankFee,  bankFee,  '$');
+    animVal(els.bankGets, 'bankGets', prev.bankGets, bankGets, '$');
+    animVal(els.savings,  'savings',  prev.savings,  savings,  '$');
+
+    prev = { arcGets, wuFee, wuGets, bankFee, bankGets, savings };
+
+    if (els.banner) {
+      els.banner.classList.remove('pulse');
+      void els.banner.offsetWidth;
+      els.banner.classList.add('pulse');
+    }
+  }
+
+  amountInput.addEventListener('input', updateCalc);
+  document.getElementById('calcCountry')?.addEventListener('change', updateCalc);
+})();
 
 // ——— Newsletter ———
 function handleNewsletter(e) {
